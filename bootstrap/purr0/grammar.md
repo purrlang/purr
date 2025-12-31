@@ -10,7 +10,7 @@ StructDecl := "struct" Identifier "{" FieldList "}"
 
 FieldList := { Identifier ":" Type ";" }
 
-FunctionDecl := "fn" Identifier "(" [ ParamList ] ")" "->" Type Block
+FunctionDecl := "func" Identifier "(" [ ParamList ] ")" "->" Type Block
 
 ParamList := Param { "," Param }
 Param := Identifier ":" Type

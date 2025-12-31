@@ -5,7 +5,7 @@ struct Token {
   pos: i32;
 }
 
-fn tokenize(input: string) -> i32 {
+func tokenize(input: string) -> i32 {
   let i: i32 = 0;
   let n: i32 = 0; // runtime provides real length
   while (i < n) {
@@ -20,6 +20,6 @@ fn tokenize(input: string) -> i32 {
   return 0;
 }
 
-fn main() -> i32 {
+func main() -> i32 {
   return tokenize("x");
-}
+} 

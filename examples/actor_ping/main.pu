@@ -1,5 +1,5 @@
 // actor_ping example (stub)
 
-fn main() {
+func main() {
     // TODO: actor ping-pong example
-}
+} 

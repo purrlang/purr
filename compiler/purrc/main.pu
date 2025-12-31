@@ -2,6 +2,6 @@
 
 // TODO: implement CLI, front-end pipeline orchestration
 
-fn main(args) {
+func main(args) {
     // placeholder
-}
+} 

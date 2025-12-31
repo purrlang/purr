@@ -1,5 +1,5 @@
 // Hello world example (stub)
 
-fn main() {
+func main() {
     // println!("Hello, Purr!")
-}
+} 

@@ -1,5 +1,5 @@
 // stream_basic example (stub)
 
-fn main() {
+func main() {
     // TODO: basic streaming example
-}
+} 
