@@ -1,0 +1,7 @@
+// CLI entry for `purr` tool (stub)
+
+// TODO: implement subcommands: build, run, fmt
+
+fn main(args) {
+    // placeholder
+}

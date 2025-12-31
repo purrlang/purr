@@ -1,0 +1,3 @@
+// wasm.pu - wasm platform bindings (stub)
+
+// TODO: implement wasm-specific runtime interfaces

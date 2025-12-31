@@ -1,0 +1,3 @@
+// windows.pu - windows platform bindings (stub)
+
+// TODO: implement windows-specific syscalls and abstractions
