@@ -64,6 +64,10 @@ Modules
 Errors
 - No exceptions; errors are modeled explicitly via return values or error structs.
 
+Option & result shorthand
+- `option<T>` is the explicit optional type used to represent a value that may be absent.
+- For convenience, `T?` is provided as syntactic sugar for `option<T>` (e.g., `User?` == `option<User>`). This is purely syntactic and lowers to a discriminated struct: `{ has: bool, value: T }`.
+
 Stability policy
 - purr0 is frozen after the bootstrap compiler is produced; further language evolution occurs in the full purr language, not purr0.
 

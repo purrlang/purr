@@ -28,6 +28,10 @@ Strings as pointer+length
 Errors as return values
 - Explicit and easy to model in IR; no exception semantics to implement.
 
+Optional shorthand (`T?`)
+- `T?` is provided as a readability convenience and is rewritten to `option<T>` by the parser.
+- It does not introduce hidden semantics or implicit nulls; lowering remains explicit (`{ has: bool, value: T }`).
+
 Out-of-scope features
 - Generics, traits, macros, reflection, async/await, actor/stream abstractions,
   operator overloading, and other high-level features are explicitly excluded

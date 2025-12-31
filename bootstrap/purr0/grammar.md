@@ -15,10 +15,14 @@ FunctionDecl := "func" Identifier "(" [ ParamList ] ")" "->" Type Block
 ParamList := Param { "," Param }
 Param := Identifier ":" Type
 
-Type := "i32" | "i64" | "bool" | "string" | "void" | Identifier
+BaseType := "i32" | "i64" | "bool" | "string" | "void" | Identifier
+
+Type := BaseType [ "?" ]
 
 Block := "{" { Statement } "}"
 
+Notes:
+- `T?` is syntactic sugar for `option<T>` and is rewritten by the parser into the explicit `option<T>` type. It does not introduce nullable semantics or implicit conversions.
 Statement :=
   LetDecl
   | IfStmt

@@ -1,0 +1,29 @@
+// option_example.pu - demonstrates `T?` shorthand for option<T>
+
+struct User {
+  id: i64;
+  name: string;
+}
+
+// `User?` is sugar for `option<User>` (stdlib should provide `some()`/`none()` helpers)
+func find_user(id: i64) -> User? {
+  // placeholder: pretend db_lookup returns User? from stdlib
+  let u: User? = none();
+  if (u.has) {
+    return u; // propagate found value
+  } else {
+    return none();
+  }
+}
+
+func main() -> i32 {
+  let maybe: User? = find_user(42);
+  if (maybe.has) {
+    let user: User = maybe.value;
+    // use `user` here
+    return 0;
+  } else {
+    // handle missing user
+    return 1;
+  }
+}
