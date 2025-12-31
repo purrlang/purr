@@ -30,6 +30,13 @@ Functions
 - Parameters and return types are explicit.
 - No closures. Recursion is allowed but not required.
 
+Lambdas (anonymous functions)
+- Lambdas are expression-only, explicit (param and return types required), and must be trivially desugared to a top-level `func` by the compiler.
+- Syntax: `(x: i32): i32 => x + 1`.
+- Lowering model: every lambda is rewritten into a fresh top-level `func __lambda_N(...) -> T { return <expr>; }` with no captures. Lambdas do not introduce runtime closures in v1.
+- Restrictions: no implicit captures, no multi-statement bodies, no type inference for parameters or return types, no async lambdas, and no implicit effects (use `do` for effectful blocks).
+- Lambdas may be assigned to local bindings, passed as arguments, or returned as values; they are purely syntactic convenience and must lower precisely to named `func` definitions.
+
 Control flow
 - `if` / `else` (statement form required; expression form optional)
 - `while` loops

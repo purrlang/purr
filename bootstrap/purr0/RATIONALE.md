@@ -32,6 +32,9 @@ Optional shorthand (`T?`)
 - `T?` is provided as a readability convenience and is rewritten to `option<T>` by the parser.
 - It does not introduce hidden semantics or implicit nulls; lowering remains explicit (`{ has: bool, value: T }`).
 
+Lambdas
+- Lambdas are allowed as a readability convenience but are intentionally simple: expression-only, explicitly typed, and desugared to top-level functions.
+- We disallow captures and multi-statement bodies to keep lowering trivial and avoid hidden semantics; this matches the design goal that every construct must map cleanly to LLVM IR.
 Out-of-scope features
 - Generics, traits, macros, reflection, async/await, actor/stream abstractions,
   operator overloading, and other high-level features are explicitly excluded

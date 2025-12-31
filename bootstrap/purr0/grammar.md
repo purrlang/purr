@@ -50,11 +50,18 @@ RelationalExpr := AddExpr { ("<" | "<=" | ">" | ">=") AddExpr }
 AddExpr := MulExpr { ("+" | "-") MulExpr }
 MulExpr := UnaryExpr { ("*" | "/") UnaryExpr }
 UnaryExpr := [ "!" | "-" ] Primary
-Primary := int-literal | bool-literal | string-literal | Identifier | FunctionCall | StructLiteral | "(" Expression ")" | FieldAccess
+
+Lambda := "(" [ ParamList ] ")" ":" Type "=>" Expression
+
+Primary := int-literal | bool-literal | string-literal | Identifier | FunctionCall | StructLiteral | Lambda | "(" Expression ")" | FieldAccess
 
 FunctionCall := Identifier "(" [ ArgList ] ")"
 ArgList := Expression { "," Expression }
 
+Notes:
+- `Lambda` is an expression-only form and is syntactic sugar for an anonymous `func`.
+- Syntax requires explicit parameter types and an explicit return type: `(x: i32): i32 => x + 1`.
+- No block-bodied lambdas (`=>` must be followed by a single expression).
 StructLiteral := Identifier "{" [ InitList ] "}"
 InitList := Identifier ":" Expression { "," Identifier ":" Expression }
 
