@@ -8,6 +8,17 @@ set -euo pipefail
 # 3) Lower program.ll to object and link to an executable
 # 4) Run the produced executable
 
+# Check for required commands early and give helpful messages.
+REQUIRED_CMDS=(llc clang sed)
+for cmd in "${REQUIRED_CMDS[@]}"; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Error: required command '$cmd' not found in PATH." >&2
+    echo "On Windows, you can install LLVM and ensure 'llc' and 'clang' are on PATH." >&2
+    echo "On Linux/macOS, install the LLVM tools (e.g., apt install llvm clang)." >&2
+    exit 2
+  fi
+done
+
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$SCRIPT_DIR"
 
