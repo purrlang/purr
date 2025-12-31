@@ -1,0 +1,10 @@
+// func_return_user.pu
+
+struct User {
+  id: i64;
+  name: string;
+}
+
+func get_user() -> User {
+  return User{ id: 1, name: "alice" };
+}

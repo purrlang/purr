@@ -1,0 +1,15 @@
+// nodes.pu - AST node definitions (documentation & stubs)
+
+// AST node shapes (conceptual):
+// Program := { Declaration }
+// Declaration := StructDecl | FunctionDecl
+// StructDecl := { name: string, fields: [{ name: string, type: Type }] }
+// FunctionDecl := { name: string, params: [{name, type}], ret: Type, body: Block }
+// Block := { statements: [Statement] }
+// LetDecl := { name: string, type: Type, init: Expression }
+// IfStmt := { cond: Expression, then: Block, else: Block? }
+// WhileStmt := { cond: Expression, body: Block }
+// ReturnStmt := { value: Expression? }
+// Expression: many forms (literals, binary ops, function call, struct literal, field access, option constructs)
+
+// In code we will implement constructors and helpers to create these nodes.

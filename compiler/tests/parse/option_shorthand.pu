@@ -1,0 +1,10 @@
+// option_shorthand.pu
+
+struct User {
+  id: i64;
+  name: string;
+}
+
+func maybe_user() -> User? {
+  return none();
+}
