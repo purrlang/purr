@@ -6,6 +6,8 @@ purr exists to eliminate footguns for both humans and AI.
 Not by adding rules.
 By removing ambiguity.
 
+See `KEYWORDS.md` for the frozen, canonical keyword set and short rationale.
+
 -----------------
 CORE BELIEF
 -----------------
