@@ -1,0 +1,22 @@
+# Normalize line endings and mark binaries
+* text=auto
+
+# Shell scripts: use LF
+*.sh eol=lf
+
+# PowerShell scripts: use CRLF
+*.ps1 eol=crlf
+
+# LLVM IR: text, LF line endings
+*.ll text eol=lf
+
+# Binary artifacts
+*.o binary
+*.obj binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+*.a binary
+*.class binary
+*.jar binary

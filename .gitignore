@@ -1,0 +1,57 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln
+*.swp
+*~
+
+# Build artifacts
+*.o
+*.obj
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.a
+*.lib
+
+# Project-specific generated files
+program
+program.o
+program.ll
+purr0c
+purr0c.o
+
+# Build directories
+build/
+dist/
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# Coverage
+coverage/
+*.cover
+
+# Misc
+*.class
+*.jar
