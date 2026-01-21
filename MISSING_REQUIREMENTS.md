@@ -20,20 +20,19 @@ Nothing outside this document is required to proceed with implementation.
   - Windows
 
 ### Language Features
-- Modules / imports: **YES**
-- `result<T, E>`: **YES**
+- Namespaces / `use`: **YES**
+- `result<T, E>`: **YES** (predeclared type constructor)
 - `T?` (optional): **YES** (syntax sugar over `option<T>`)
 - Lambdas: **YES** (expression-only, no captures)
-- Generics: **NO**
-- Effects and `do`: **YES** (syntax-level only)
-- Concurrency (`actor/stream/spawn/await`): **RESERVED ONLY**
+- Generics: **NO** (except predeclared type constructors)
+- Effects: **YES** (explicit capability inputs; no `do`)
+- Concurrency (`actor/on/spawn`): **YES**
 - FFI (C interop): **NO**
 
 ### Non-goals for v1
 - Garbage collection
 - async / await
-- pattern matching
-- inheritance / interfaces
+- implicit polymorphism
 - reflection
 - macros
 - custom allocators exposed to users
@@ -69,7 +68,7 @@ If behavior is not specified, it is **undefined and unsupported**.
 
 ### Whitespace
 - Whitespace is insignificant
-- Semicolons are **REQUIRED** to terminate statements
+- Semicolons are **REQUIRED** to terminate non-block statements
 
 ### Identifiers
 - ASCII letters, digits, underscore
@@ -100,13 +99,24 @@ If behavior is not specified, it is **undefined and unsupported**.
 - `bytes`
 - `void`
 
+Predeclared type constructors:
+- `option<T>`
+- `result<T, E>`
+- `mailbox<T>`
+- `reply<T>`
+
 No unsigned integers.
-No null.
+No null; use `nil` for optionals.
 No implicit conversions.
 
 ### Optionals
 - `T?` is syntax sugar for `option<T>`
 - Layout: `{ has: bool, value: T }`
+- `nil` is the only literal optional value
+
+### `var` inference
+- If a `var` declaration omits its type, it is inferred from the initializer
+- If the initializer is `nil`, an explicit optional type is required
 
 ### Results
 - `result<T, E>` layout: `{ ok: bool, t: T, e: E }`
@@ -126,20 +136,44 @@ No implicit conversions.
 ## 5) Control Flow
 
 - `if` / `else` are statements only
-- `while` is the only loop construct
+- `for` is the only loop construct and takes a single condition
+- `switch` uses `case` clauses and optional `else`
 - Evaluation order is strictly left-to-right
 - Function arguments evaluate left-to-right
 - `&&` and `||` short-circuit
 
 ---
 
+## 5.5) Interfaces
+
+- Interfaces declare required METHOD signatures only
+- No fields, no default implementations
+- Structural satisfaction only
+- Free functions never satisfy interfaces
+
+---
+
 ## 6) Mutability Model
 
-- Everything is immutable by default
-- `let` is the ONLY binding keyword
+- `var` is the ONLY binding keyword
+- Function parameters are immutable
+- `var` bindings are mutable and single-writer within scope
 - Rebinding allowed ONLY within `func` scope
-- Rebinding never mutates shared state
-- Struct fields are immutable
+- Global mutable state is forbidden
+- Assignments across actor boundaries are forbidden
+
+---
+
+## 6.5) Functions vs Methods
+
+- A function is a method iff it is declared as `Type.Method`.
+- Methods have no receivers or `this`.
+- Methods are satisfied structurally by interfaces; free functions never satisfy interfaces.
+- Dot-call syntax never performs method dispatch; `value.f(...)` is only valid if `f` is a function-typed field.
+
+Return types:
+- A function or handler with no return type defaults to `void`.
+- `return` with a value is invalid in `void` functions.
 
 ---
 
@@ -159,33 +193,47 @@ Syntax:
 
 ---
 
-## 8) Effects and `do`
+## 8) Effects and explicit capabilities
 
-- `do` is a syntactic effect boundary
-- No effect typing in v1
-- IO, time, randomness, allocation must occur inside `do`
-- Stdlib effectful APIs REQUIRE `do`
+- IO, time, randomness, allocation are effects
+- Effects require explicit capability parameters
+- No ambient or implicit effects
+- Stdlib effectful APIs REQUIRE an explicit capability in scope
 
 ---
 
-## 9) Modules and Imports
+## 9) Actors and Concurrency
 
-- Every source file MUST declare exactly one `module <name>;`.
-- Module names are fully-qualified dot-separated identifiers (logical namespace), not filesystem paths.
-- Multiple files may declare the same module name; all such files form a single module and share one namespace.
-- Import syntax:
-  - `import <module>;`
-  - `import <module> as <alias>;`
-- Imports refer ONLY to fully-qualified module names; path-based/relative imports are forbidden.
-- If no alias is specified, the alias defaults to the final segment of the module name; explicit aliasing is required on collisions.
-- All references to imported symbols MUST be qualified with the module alias; unqualified access is forbidden.
+- Actors are single-threaded state owners
+- Actor handlers run to completion, one at a time
+- Message ordering per actor is deterministic (FIFO)
+- `spawn` is the only way to introduce concurrency
+- Mailboxes are lock-free MPSC and bounded
+- Request/response uses explicit reply channels (`reply<T>`)
+- No shared mutable state across actor boundaries
+
+Actor fields are declared directly in the actor body and are mutable only within `on` handlers.
+
+---
+
+## 10) Namespaces and Use
+
+- Every source file MUST declare exactly one `namespace <name>;`.
+- Namespace names are fully-qualified dot-separated identifiers (logical namespace), not filesystem paths.
+- Multiple files may declare the same namespace name; all such files form a single namespace and share one namespace.
+- `use` syntax:
+  - `use <namespace>;`
+  - `use <namespace> = <alias>;`
+- `use` refers ONLY to fully-qualified namespace names; path-based/relative `use` is forbidden.
+- If no alias is specified, the alias defaults to the final segment of the namespace name; explicit aliasing is required on collisions.
+- All references to imported symbols MUST be qualified with the namespace alias; unqualified access is forbidden.
 - No visibility modifiers in v1.
 - No implicit re-exports in v1.
-- Cyclic imports are forbidden.
+- Cyclic dependencies are forbidden.
 
 ---
 
-## 10) Runtime ABI (v1)
+## 11) Runtime ABI (v1)
 
 ### `string`
 - Layout: `{ ptr: *u8, len: i64 }`
@@ -203,12 +251,13 @@ Syntax:
 ### Memory
 - No GC
 - Runtime allocator
+- Heap allocation must be explicit via stdlib APIs
 - No destructors
 - Leak-on-exit acceptable
 
 ---
 
-## 11) Compiler Pipeline
+## 12) Compiler Pipeline
 
 Required pipeline:
 
@@ -221,7 +270,7 @@ Required pipeline:
 
 ---
 
-## 12) Bootstrap Verification
+## 13) Bootstrap Verification
 
 - `purr0c` (handwritten LLVM IR) compiles `purrc.pu`
 - `purrc` recompiles itself

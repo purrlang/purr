@@ -1,34 +1,40 @@
 # Purr keyword set
 
-This file records the **frozen** keyword set for purr and the short rationale.
+This file records the **frozen** keyword set for Purr and the short rationale.
 Treat this as normative: keywords are small, single-meaning, and unambiguous.
 
 ## Keyword list (flat)
-module, import, struct, type, func, let, return, if, else, while, result, error, do, actor (reserved), stream (reserved), spawn (reserved), await (reserved), true, false
+namespace, use,
+struct, enum, interface,
+actor, on, spawn,
+func, var, return,
+if, else, for, switch, case,
+nil, true, false
 
 ## Rationale (short)
-- module — compilation unit / namespace; grouping only.
-- import — explicit module import; no implicit resolution.
+- namespace — compilation unit / namespace; grouping only.
+- use — explicit namespace import; no implicit resolution.
 - struct — fixed-layout product type.
-- type — declare a named alias or type definition.
-- func — top-level function declaration (explicit params/returns).
-- let — immutable binding (single-assignment); shadowing allowed.
+- enum — closed tagged union; explicit cases only.
+- interface — structural method requirements only.
+- actor — single-threaded state owner.
+- on — actor message handler definition.
+- spawn — explicit concurrency introduction; creates an actor.
+- func — top-level function or method declaration.
+- var — mutable binding (single-writer, no shared mutation across actors).
 - return — function return, explicit and local.
 - if / else — conditional control flow (no other meanings).
-- while — loop with explicit condition; maps to branch/phi.
-- result — type constructor for `result<T,E>` (explicit errors).
-- error — produce an error value for `result` (no exceptions).
-- do — explicit effectful block / effect boundary.
-- actor / stream / spawn / await — **reserved** concurrency keywords; semantics provided by runtime when enabled.
+- for — single loop construct with explicit init/condition/step.
+- switch / case — explicit multi-branch control flow.
+- nil — absence value for optionals.
 - true / false — boolean literals; no truthy/falsy coercions.
 
 ## Why excluded keywords are forbidden (summary)
 - Synonyms like `fn` are disallowed; use `func`.
-- Mutable/aliasing keywords (`var`, `const`, `mutable`) create multiple binding models; we keep only immutable `let`.
-- `null` and top types (`any`, `object`) break structural correctness; use `T?` and explicit `result` instead.
-- Control forms like `for`, `switch`, `match` increase surface area; stick to `while` and library helpers for clarity.
-- Exception-style keywords (`try`, `catch`, `throw`) hide control flow; `result` is explicit.
-- OOP keywords (`class`, `interface`, `extends`, `implements`) introduce hidden identity and polymorphism; prefer plain `struct` + functions.
+- Extra binding keywords (`let`, `const`, `mutable`) create multiple models; keep only `var`.
+- Exception-style keywords (`try`, `catch`, `throw`) hide control flow; errors are explicit values.
+- OOP keywords (`class`, `extends`, `implements`) introduce hidden identity and polymorphism; use `struct` + functions.
+- Async keywords (`async`, `await`) hide scheduling; concurrency is explicit via actors.
 
 ## Notes
 - This set is intentionally small and frozen early. Additions require strong justification and a coordinated deprecation path.

@@ -7,6 +7,10 @@
 // implementation. For now this file contains stubs and documentation; later it
 // will contain the actual parsing code that constructs AST nodes declared in
 // `../ast`.
+//
+// Parsing must follow SPEC.md (namespace/use, var/assign/for/switch, interfaces,
+// actors with fields, methods via Type.Method, enums, and spawn expressions).
+// Keywords are fixed in KEYWORDS.md.
 
 func parse_program(source: string) -> string {
   // TODO: implement a real parser that returns a Program AST.
