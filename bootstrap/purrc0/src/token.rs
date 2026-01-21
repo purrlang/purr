@@ -56,6 +56,7 @@ pub enum TokenKind {
     BangEq,
     LtEq,
     GtEq,
+    Question,
 }
 
 #[derive(Debug, Clone, PartialEq)]

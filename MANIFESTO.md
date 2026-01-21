@@ -107,6 +107,31 @@ WHAT PURR IS
 - A foundation for reliable, long-running software
 
 -----------------
+POSITIONING (SYSTEMS-FOCUSED)
+-----------------
+Purr trades expressiveness for determinism, locality, and AI-safe correctness.
+
+Compared to C#:
+- No GC, no ambient async, deterministic concurrency
+
+Compared to Go:
+- Actor isolation instead of shared-memory-by-default
+- Explicit method binding, no receiver sugar
+
+Compared to Rust:
+- No lifetimes or borrow checker
+- Concurrency via actors, not many models
+
+Compared to Zig:
+- Opinionated architecture and higher-level concurrency
+
+When not to use Purr:
+- UI apps
+- scripting/glue code
+- numeric kernels or GPU/SIMD-heavy code
+- heavy metaprogramming
+
+-----------------
 FINAL RULE
 -----------------
 If the language lets you get it wrong,

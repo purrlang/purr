@@ -5,9 +5,11 @@ mod lexer;
 mod parser;
 mod span;
 mod token;
+mod typecheck;
 
 use crate::lexer::lex;
 use crate::parser::parse_program;
+use crate::typecheck::typecheck;
 use std::env;
 use std::fs;
 
@@ -37,8 +39,12 @@ fn main() {
     };
 
     match parse_program(&tokens) {
-        Ok(_program) => {
-            println!("purrc0: parse ok (namespace/use only)");
+        Ok(program) => {
+            if let Err(e) = typecheck(&program) {
+                report_error(&source, &path, &e);
+                std::process::exit(1);
+            }
+            println!("purrc0: parse + typecheck ok");
         }
         Err(e) => {
             report_error(&source, &path, &e);

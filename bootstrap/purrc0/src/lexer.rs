@@ -134,6 +134,7 @@ pub fn lex(source: &str) -> Result<Vec<Token>, Error> {
                     (TokenKind::Gt, 1)
                 }
             }
+            b'?' => (TokenKind::Question, 1),
             b'-' => {
                 if i + 1 < bytes.len() && bytes[i + 1] == b'>' {
                     (TokenKind::Arrow, 2)
