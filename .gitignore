@@ -14,11 +14,14 @@ Thumbs.db
 # Build artifacts
 *.o
 *.obj
+*.pdb
+*.ilk
 *.so
 *.dylib
 *.dll
 *.exe
 *.out
+*.pu.exe
 *.a
 *.lib
 
@@ -32,11 +35,15 @@ purr0c.o
 # Build directories
 build/
 dist/
+target/
 
 # Logs and temporary files
 *.log
 *.tmp
 tmp/
+
+# Generated Purr artifacts
+*.pu.c
 
 # Python
 .venv/

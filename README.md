@@ -2,6 +2,18 @@
 
 Minimal repository skeleton for the Purr language.
 
-This repo contains the bootstrap, compiler, runtime, standard library, examples, and tools.
+Repo layout:
+- compiler/purrc0 — Rust bootstrap compiler
+- purrc — self-hosted compiler (stub)
+- runtime — minimal runtime
+- stdlib — standard library
+- spec — language + execution model specs
+- examples — canonical examples
+- tools — Python build/test tooling
+- tests — compiler conformance tests
 
-See `SPEC.md`, `BOOTSTRAP.md`, and the `MANIFESTO.md` for the project philosophy and design principles.
+Entry points:
+- tools/build.py — build a Purr program via purrc0
+- tools/test.py — run conformance tests (stub)
+
+See spec/SPEC.md, spec/BOOTSTRAP.md, and spec/MANIFESTO.md.

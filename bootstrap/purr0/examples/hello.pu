@@ -1,5 +1,0 @@
-// hello.pu - minimal purr0 program
-
-func main() -> i32 {
-  return 0;
-} 

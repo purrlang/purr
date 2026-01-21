@@ -1,3 +1,0 @@
-// llvm.pu - LLVM IR emitter (stub)
-
-// TODO: Emit LLVM IR from lowered IR

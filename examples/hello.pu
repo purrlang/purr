@@ -1,0 +1,7 @@
+namespace example.hello;
+use core;
+
+func main() i32 {
+    core.Print("hello, purr");
+    return 0;
+}

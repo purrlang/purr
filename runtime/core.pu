@@ -1,3 +1,1 @@
 // core.pu - runtime core (allocations, basic types, string handling)
-
-// TODO: implement allocator, basic runtime helpers

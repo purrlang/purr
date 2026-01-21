@@ -1,0 +1,7 @@
+// main.pu - entry point for purrc (stub)
+
+// Stub entry point for the self-hosted compiler.
+
+func main(args) {
+    // placeholder
+} 

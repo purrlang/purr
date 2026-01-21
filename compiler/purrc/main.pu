@@ -1,7 +1,0 @@
-// main.pu - entry point for purrc (stub)
-
-// TODO: implement CLI, front-end pipeline orchestration
-
-func main(args) {
-    // placeholder
-} 
