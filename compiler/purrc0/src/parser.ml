@@ -71,21 +71,92 @@ let expectInt st =
   | _ ->
       Error (Error.fromSpan tok.span "Expected integer literal")
 
-let expectType st =
+(* M9: Parse types including generics like option<T>, list<T>, result<T,E> *)
+let rec parse_type st =
   let tok = current st in
   match tok.Token.kind with
   | Token.Type ty ->
       ignore (advance st);
-      let ast_ty = match ty with
+      let base_ty = match ty with
         | "i32" -> Ast.I32
         | "i64" -> Ast.I64
         | "string" -> Ast.String
         | "bool" -> Ast.Bool
         | _ -> failwith "Unknown type"
       in
-      Ok (ast_ty, tok.span)
+      (* Check for ? suffix for option sugar: i32? = option<i32> *)
+      let next_tok = current st in
+      (match next_tok.Token.kind with
+       | _ -> Ok (base_ty, tok.span))
+  | Token.Nil ->
+      ignore (advance st);
+      Ok (Ast.Nil, tok.span)
+  | Token.Option ->
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match parse_type st with
+       | Error e -> Error e
+       | Ok (inner_ty, _) ->
+           let _ = expect st Token.Greater in
+           Ok (Ast.Option inner_ty, tok.span))
+  | Token.Result ->
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match parse_type st with
+       | Error e -> Error e
+       | Ok (ok_ty, _) ->
+           let _ = expect st Token.Comma in
+           (match parse_type st with
+            | Error e -> Error e
+            | Ok (err_ty, _) ->
+                let _ = expect st Token.Greater in
+                Ok (Ast.Result (ok_ty, err_ty), tok.span)))
+  | Token.List ->
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match parse_type st with
+       | Error e -> Error e
+       | Ok (elem_ty, _) ->
+           let _ = expect st Token.Greater in
+           Ok (Ast.List elem_ty, tok.span))
+  | Token.Map ->
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match parse_type st with
+       | Error e -> Error e
+       | Ok (key_ty, _) ->
+           let _ = expect st Token.Comma in
+           (match parse_type st with
+            | Error e -> Error e
+            | Ok (val_ty, _) ->
+                let _ = expect st Token.Greater in
+                Ok (Ast.Map (key_ty, val_ty), tok.span)))
+  | Token.Fixed ->
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match parse_type st with
+       | Error e -> Error e
+       | Ok (elem_ty, _) ->
+           let _ = expect st Token.Comma in
+           (match expectInt st with
+            | Error e -> Error e
+            | Ok (size_lit, _) ->
+                let size = Int64.to_int size_lit in
+                let _ = expect st Token.Greater in
+                Ok (Ast.Fixed (elem_ty, size), tok.span)))
+  | Token.Slice ->
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match parse_type st with
+       | Error e -> Error e
+       | Ok (elem_ty, _) ->
+           let _ = expect st Token.Greater in
+           Ok (Ast.Slice elem_ty, tok.span))
   | _ ->
       Error (Error.fromSpan tok.span "Expected type")
+
+let expectType st =
+  parse_type st
 
 let parse_param st =
   let tok = current st in
@@ -134,9 +205,36 @@ let rec parse_primary st =
   | Token.False ->
       ignore (advance st);
       Ok (Ast.BoolLit (false, tok.span))
+  | Token.Nil ->
+      ignore (advance st);
+      Ok (Ast.NilLit tok.span)
   | Token.StringLit s ->
       ignore (advance st);
       Ok (Ast.StringLit (s, tok.span))
+  | Token.LBracket ->
+      (* M9: List literal [elem1, elem2, ...] *)
+      ignore (advance st);
+      let rec parse_list_elements acc =
+        let elem_tok = current st in
+        (match elem_tok.Token.kind with
+         | Token.RBracket ->
+             ignore (advance st);
+             Ok (List.rev acc)
+         | Token.Comma ->
+             ignore (advance st);
+             parse_list_element acc
+         | _ when acc = [] ->
+             parse_list_element acc
+         | _ ->
+             Error (Error.fromSpan elem_tok.span "Expected ',' or ']' in list literal"))
+      and parse_list_element acc =
+        match parse_expr st with
+        | Error e -> Error e
+        | Ok elem -> parse_list_elements (elem :: acc)
+      in
+      (match parse_list_elements [] with
+       | Error e -> Error e
+       | Ok elements -> Ok (Ast.ListLit { elements; span = tok.span }))
   | Token.Ident name ->
       ignore (advance st);
       let span = tok.span in
@@ -241,6 +339,7 @@ and parse_binop_in_category st left_expr category =
   | _ -> Ok left_expr
 
 (* M7: Apply postfix operations (field access) *)
+(* M9: Also apply index access *)
 let rec apply_postfix st expr =
   let tok = current st in
   match tok.Token.kind with
@@ -251,6 +350,15 @@ let rec apply_postfix st expr =
        | Ok (field_name, _) ->
            let field_expr = Ast.FieldAccess { object_ = expr; field = field_name; span = tok.span } in
            apply_postfix st field_expr)
+  | Token.LBracket ->
+      (* M9: Index access obj[index] *)
+      ignore (advance st);
+      (match parse_expr st with
+       | Error e -> Error e
+       | Ok index_expr ->
+           let _ = expect st Token.RBracket in
+           let index_access = Ast.IndexAccess { object_ = expr; index = index_expr; span = tok.span } in
+           apply_postfix st index_access)
   | _ -> Ok expr
 
 (* Parse a full expression with mandatory parenthesization between categories *)
