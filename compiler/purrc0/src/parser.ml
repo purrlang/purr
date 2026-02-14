@@ -626,55 +626,81 @@ let rec parse_handler st =
   match tok.Token.kind with
   | Token.On ->
       let _ = advance st in
-      (* M15: Parse message type (could be "start" or a message name) *)
-      (match expectIdent st with
-       | Error e -> Error e
-       | Ok (message_type, _) ->
+      (* M15: Parse message type - handle both "start" keyword and message name identifiers *)
+      let tok2 = current st in
+      (match tok2.Token.kind with
+       | Token.Start ->
+           let _ = advance st in
+           let message_type = "start" in
            let _ = expect st Token.LParen in
-           (* M15: Parse handler parameters *)
-           let rec parseParams (acc: Ast.param list) =
-             let tok = current st in
-             if tok.Token.kind = Token.RParen then
-               Ok (List.rev acc)
-             else
-               (match expectIdent st with
-                | Error e -> Error e
-                | Ok (param_name, _) ->
-                    let _ = expect st Token.Colon in
-                    (match expectType st with
-                     | Error e -> Error e
-                     | Ok (param_ty, _) ->
-                         let tok2 = current st in
-                         if tok2.Token.kind = Token.Comma then
-                           let _ = advance st in
-                           parseParams ({ Ast.name = param_name; ty = param_ty } :: acc)
-                         else
-                           parseParams ({ Ast.name = param_name; ty = param_ty } :: acc)))
-           in
-           (match parseParams [] with
+           (* Parse empty parameters *)
+           let _ = expect st Token.RParen in
+           let tok3 = current st in
+           (match tok3.Token.kind with
+            | Token.LBrace ->
+                let _ = advance st in
+                (match parseStmtList st [] with
+                 | Error e -> Error e
+                 | Ok body ->
+                     let tok4 = current st in
+                     (match tok4.Token.kind with
+                      | Token.RBrace ->
+                          let _ = advance st in
+                          Ok ({ Ast.message_type; params = []; body; span = tok.span } : Ast.handler)
+                      | _ ->
+                          Error (Error.fromSpan tok4.span "Expected }")))
+            | _ ->
+                Error (Error.fromSpan tok3.span "Expected {"))
+       | _ ->
+           (* Parse message type as identifier *)
+           (match expectIdent st with
             | Error e -> Error e
-            | Ok params ->
-                let _ = expect st Token.RParen in
-                let tok2 = current st in
-                (match tok2.Token.kind with
-                 | Token.LBrace ->
-                     let _ = advance st in
-                     (match parseStmtList st [] with
-                      | Error e -> Error e
-                      | Ok body ->
-                          let tok3 = current st in
-                          (match tok3.Token.kind with
-                           | Token.RBrace ->
-                               let _ = advance st in
-                               Ok ({ Ast.message_type; params; body; span = tok.span } : Ast.handler)
-                           | _ ->
-                               Error (Error.fromSpan tok3.span "Expected }")))
-                 | _ ->
-                     Error (Error.fromSpan tok2.span "Expected {"))))
+            | Ok (message_type, _) ->
+                let _ = expect st Token.LParen in
+                (* M15: Parse handler parameters *)
+                let rec parseParams (acc: Ast.param list) =
+                  let tok = current st in
+                  if tok.Token.kind = Token.RParen then
+                    Ok (List.rev acc)
+                  else
+                    (match expectIdent st with
+                     | Error e -> Error e
+                     | Ok (param_name, _) ->
+                         let _ = expect st Token.Colon in
+                         (match expectType st with
+                          | Error e -> Error e
+                          | Ok (param_ty, _) ->
+                              let tok2 = current st in
+                              if tok2.Token.kind = Token.Comma then
+                                let _ = advance st in
+                                parseParams ({ Ast.name = param_name; ty = param_ty; span = tok.span } :: acc)
+                              else
+                                parseParams ({ Ast.name = param_name; ty = param_ty; span = tok.span } :: acc)))
+                in
+                (match parseParams [] with
+                 | Error e -> Error e
+                 | Ok params ->
+                     let _ = expect st Token.RParen in
+                     let tok2 = current st in
+                     (match tok2.Token.kind with
+                      | Token.LBrace ->
+                          let _ = advance st in
+                          (match parseStmtList st [] with
+                           | Error e -> Error e
+                           | Ok body ->
+                               let tok3 = current st in
+                               (match tok3.Token.kind with
+                                | Token.RBrace ->
+                                    let _ = advance st in
+                                    Ok ({ Ast.message_type; params; body; span = tok.span } : Ast.handler)
+                                | _ ->
+                                    Error (Error.fromSpan tok3.span "Expected }")))
+                      | _ ->
+                          Error (Error.fromSpan tok2.span "Expected {")))))
   | _ ->
       Error (Error.fromSpan tok.span "Expected 'on'")
 
-let rec parse_actor_body st state_fields funcs handlers =
+let rec parse_actor_body st (state_fields: Ast.struct_field list) (funcs: Ast.func_def list) (handlers: Ast.handler list) =
   (* Skip optional newlines *)
   while current st |> fun t -> t.Token.kind = Token.Newline do
     ignore (advance st)
@@ -695,7 +721,7 @@ let rec parse_actor_body st state_fields funcs handlers =
            (match expectType st with
             | Error e -> Error e
             | Ok (field_ty, _) ->
-                let state_field = { Ast.name = field_name; ty = field_ty; span = tok.span } in
+                let state_field : Ast.struct_field = { Ast.name = field_name; ty = field_ty; span = tok.span } in
                 parse_actor_body st (state_field :: state_fields) funcs handlers))
   | Token.Fn ->
       (match parse_func st with

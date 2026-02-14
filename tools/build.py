@@ -29,12 +29,12 @@ def main():
         return 1
 
     print("Building purrc0...")
-    run(["cargo", "build"], cwd=str(PURRC0_DIR))
+    # Use dune for OCaml project
+    run(["dune", "build"], cwd=str(PURRC0_DIR))
 
     print("Compiling Purr to C...")
-    purrc0 = PURRC0_DIR / "target" / "debug" / (
-        "purrc0.exe" if os.name == "nt" else "purrc0"
-    )
+    # OCaml dune project executable
+    purrc0 = PURRC0_DIR / "_build" / "default" / "bin" / "main.exe"
     run([str(purrc0), str(source)])
 
     c_file = Path(str(source) + ".c")

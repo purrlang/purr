@@ -262,6 +262,7 @@ let tokenize file source =
           | "actor" -> Token.Actor
           | "on" -> Token.On
           | "start" -> Token.Start
+          | "state" -> Token.State
           | "print_string" -> Token.Print
           | "var" -> Token.Var
           | "true" -> Token.True

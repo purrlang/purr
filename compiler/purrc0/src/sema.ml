@@ -391,10 +391,33 @@ and checkStmtList (stmts: Ast.stmt list) (ctx: context) : (context, Error.t) res
        | Ok ctx' -> checkStmtList rest ctx')
 
 let checkHandler (handler: Ast.handler) (func_table: (string, func_sig) Hashtbl.t) (struct_table: (string, struct_def) Hashtbl.t) (enum_table: (string, enum_def) Hashtbl.t) (message_table: (string, message_def) Hashtbl.t) : (unit, Error.t) result =
-  let init_ctx = { symbols = []; functions = func_table; structs = struct_table; enums = enum_table; messages = message_table } in
-  match checkStmtList handler.Ast.body init_ctx with
-  | Error e -> Error e
-  | Ok _ -> Ok ()
+  (* M15: Validate handler message type *)
+  let msg_type_valid =
+    handler.Ast.message_type = "start" ||  (* Backward compatibility *)
+    Hashtbl.mem message_table handler.Ast.message_type
+  in
+  if not msg_type_valid then
+    Error (Error.fromSpan (match handler.Ast.body with [] -> Span.make "" 0 0 | s::_ ->
+      (match s with
+       | Ast.Print { span; _ } -> span
+       | Ast.VarDecl { span; _ } -> span
+       | _ -> Span.make "" 0 0))
+      (Printf.sprintf "Unknown message type: %s" handler.Ast.message_type))
+  else
+    (* M15: Add handler parameters to symbol table *)
+    let params_symbols = List.map (fun (p: Ast.param) ->
+      { name = p.name; ty = p.ty; span = p.span }
+    ) handler.Ast.params in
+    let init_ctx = {
+      symbols = params_symbols;
+      functions = func_table;
+      structs = struct_table;
+      enums = enum_table;
+      messages = message_table
+    } in
+    match checkStmtList handler.Ast.body init_ctx with
+    | Error e -> Error e
+    | Ok _ -> Ok ()
 
 (* M7+: Add predeclared built-in functions *)
 let add_predeclared_functions func_table =
