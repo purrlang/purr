@@ -752,9 +752,47 @@ let parse_struct st =
             | Error e -> Error e
             | Ok fields ->
                 let _ = expect st Token.RBrace in
-                Ok { Ast.name = struct_name; fields; span = tok.span }))
+                Ok ({ Ast.name = struct_name; fields; span = tok.span } : Ast.struct_def)))
   | _ ->
       Error (Error.fromSpan tok.span "Expected 'struct'")
+
+(* M14: Parse message definition *)
+let parse_message st =
+  let tok = current st in
+  match tok.Token.kind with
+  | Token.Message ->
+      let _ = advance st in
+      (match expectIdent st with
+       | Error e -> Error e
+       | Ok (message_name, _) ->
+           let _ = expect st Token.LBrace in
+           (* Parse message fields (same as struct fields) *)
+           let rec parseFields (acc: Ast.struct_field list) : (Ast.struct_field list, Error.t) result =
+             let tok = current st in
+             if tok.Token.kind = Token.RBrace then
+               Ok (List.rev acc)
+             else
+               (match expectIdent st with
+                | Error e -> Error e
+                | Ok (field_name, _) ->
+                    let _ = expect st Token.Colon in
+                    (match expectType st with
+                     | Error e -> Error e
+                     | Ok (ty, _) ->
+                         let tok2 = current st in
+                         if tok2.Token.kind = Token.Comma then
+                           let _ = advance st in
+                           parseFields ({ Ast.name = field_name; ty; span = tok.span } :: acc)
+                         else
+                           parseFields ({ Ast.name = field_name; ty; span = tok.span } :: acc)))
+           in
+           (match parseFields [] with
+            | Error e -> Error e
+            | Ok fields ->
+                let _ = expect st Token.RBrace in
+                Ok ({ Ast.name = message_name; fields; span = tok.span } : Ast.message_def)))
+  | _ ->
+      Error (Error.fromSpan tok.span "Expected 'message'")
 
 (* M8: Parse enum definition *)
 let parse_enum st =
@@ -834,7 +872,7 @@ let parse_bench_decl st =
              | _ ->
                  Error (Error.fromSpan setup_tok.span "Expected 'setup' block in bench"))))
 
-let rec parseStructEnumAndActors st structs enums benches actors =
+let rec parseStructEnumAndActors st structs enums messages benches actors =
   (* Skip optional newlines *)
   while current st |> fun t -> t.Token.kind = Token.Newline do
     ignore (advance st)
@@ -843,26 +881,30 @@ let rec parseStructEnumAndActors st structs enums benches actors =
   let tok = current st in
   match tok.Token.kind with
   | Token.EOF ->
-      Ok { Ast.structs = List.rev structs; enums = List.rev enums; benches = List.rev benches; actors = List.rev actors }
+      Ok { Ast.structs = List.rev structs; enums = List.rev enums; messages = List.rev messages; benches = List.rev benches; actors = List.rev actors }
   | Token.Struct ->
       (match parse_struct st with
        | Error e -> Error e
-       | Ok struct_def -> parseStructEnumAndActors st (struct_def :: structs) enums benches actors)
+       | Ok struct_def -> parseStructEnumAndActors st (struct_def :: structs) enums messages benches actors)
+  | Token.Message ->
+      (match parse_message st with
+       | Error e -> Error e
+       | Ok message_def -> parseStructEnumAndActors st structs enums (message_def :: messages) benches actors)
   | Token.Enum ->
       (match parse_enum st with
        | Error e -> Error e
-       | Ok enum_def -> parseStructEnumAndActors st structs (enum_def :: enums) benches actors)
+       | Ok enum_def -> parseStructEnumAndActors st structs (enum_def :: enums) messages benches actors)
   | Token.Bench ->
       (match parse_bench_decl st with
        | Error e -> Error e
-       | Ok bench_def -> parseStructEnumAndActors st structs enums (bench_def :: benches) actors)
+       | Ok bench_def -> parseStructEnumAndActors st structs enums messages (bench_def :: benches) actors)
   | Token.Actor ->
       (match parse_actor st with
        | Error e -> Error e
-       | Ok actor -> parseStructEnumAndActors st structs enums benches (actor :: actors))
+       | Ok actor -> parseStructEnumAndActors st structs enums messages benches (actor :: actors))
   | _ ->
-      Error (Error.fromSpan tok.span "Expected 'struct', 'enum', 'bench', 'actor', or EOF")
+      Error (Error.fromSpan tok.span "Expected 'struct', 'message', 'enum', 'bench', 'actor', or EOF")
 
 let parse tokens =
   let st = make tokens in
-  parseStructEnumAndActors st [] [] [] []
+  parseStructEnumAndActors st [] [] [] [] []

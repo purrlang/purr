@@ -49,6 +49,7 @@ type expr =
 type program = {
   structs: struct_def list;  (* M7: Struct definitions *)
   enums: enum_def list;  (* M8: Enum definitions *)
+  messages: message_def list;  (* M14: Message definitions *)
   benches: bench_def list;  (* M10.5: Benchmark definitions *)
   actors: actor_def list;
 }
@@ -71,6 +72,13 @@ and struct_def = {
 and struct_field = {
   name: string;
   ty: ty;
+  span: Span.t;
+}
+
+(* M14: Message definition *)
+and message_def = {
+  name: string;
+  fields: struct_field list;  (* Reuse struct field structure *)
   span: Span.t;
 }
 

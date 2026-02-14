@@ -287,6 +287,7 @@ let tokenize file source =
           | "scheduler_steps" -> Token.Scheduler_steps
           | "bytes_allocated" -> Token.Bytes_allocated
           | "struct" -> Token.Struct
+          | "message" -> Token.Message
           | "enum" -> Token.Enum
           | "switch" -> Token.Switch
           | "option" -> Token.Option

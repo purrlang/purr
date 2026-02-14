@@ -56,6 +56,8 @@ type t =
   (* M7: Structs *)
   | Struct
   | Dot
+  (* M14: Messages *)
+  | Message
   (* M8: Enums & Switch *)
   | Enum
   | Switch
@@ -135,6 +137,8 @@ let pp_kind fmt = function
   (* M7: Struct tokens *)
   | Struct -> Format.fprintf fmt "struct"
   | Dot -> Format.fprintf fmt "."
+  (* M14: Message tokens *)
+  | Message -> Format.fprintf fmt "message"
   (* M8: Enum & Switch tokens *)
   | Enum -> Format.fprintf fmt "enum"
   | Switch -> Format.fprintf fmt "switch"
