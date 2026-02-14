@@ -835,6 +835,11 @@ let parse_bench_decl st =
                  Error (Error.fromSpan setup_tok.span "Expected 'setup' block in bench"))))
 
 let rec parseStructEnumAndActors st structs enums benches actors =
+  (* Skip optional newlines *)
+  while current st |> fun t -> t.Token.kind = Token.Newline do
+    ignore (advance st)
+  done;
+
   let tok = current st in
   match tok.Token.kind with
   | Token.EOF ->
