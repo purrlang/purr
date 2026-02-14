@@ -3,8 +3,17 @@ type ty =
   | I64
   | String
   | Bool
+  | Void  (* M4: Explicit void return type *)
   | Struct of string  (* M7: Struct type with struct name *)
   | Enum of string  (* M8: Enum type with enum name *)
+  (* M9: Generic container types *)
+  | Option of ty  (* T? or option<T> *)
+  | Result of ty * ty  (* result<T, E> *)
+  | List of ty  (* list<T> *)
+  | Map of ty * ty  (* map<K, V> *)
+  | Fixed of ty * int  (* fixed<T, N> - array of N elements *)
+  | Slice of ty  (* slice<T> - dynamic array slice *)
+  | Nil  (* nil literal type for options *)
 
 (* M3: Operator types *)
 type binop =
@@ -28,6 +37,14 @@ type expr =
   | FieldAccess of { object_: expr; field: string; span: Span.t }
   (* M8: Enum variant creation *)
   | EnumVariant of { enum_name: string; variant_name: string; span: Span.t }
+  (* M9: Container expressions *)
+  | NilLit of Span.t  (* nil literal *)
+  | SomeLit of { value: expr; span: Span.t }  (* Some(expr) *)
+  | NoneLit of Span.t  (* None *)
+  | OkLit of { value: expr; span: Span.t }  (* Ok(expr) *)
+  | ErrLit of { error: expr; span: Span.t }  (* Err(expr) *)
+  | ListLit of { elements: expr list; span: Span.t }  (* [elem1, elem2, ...] *)
+  | IndexAccess of { object_: expr; index: expr; span: Span.t }  (* obj[index] *)
 
 type program = {
   structs: struct_def list;  (* M7: Struct definitions *)

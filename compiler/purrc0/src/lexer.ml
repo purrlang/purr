@@ -235,6 +235,14 @@ let tokenize file source =
         let span = Span.make file st.line st.col in
         advance st;
         loop ({ Token.kind = Token.Dot; span } :: tokens)
+    | Some '[' ->
+        let span = Span.make file st.line st.col in
+        advance st;
+        loop ({ Token.kind = Token.LBracket; span } :: tokens)
+    | Some ']' ->
+        let span = Span.make file st.line st.col in
+        advance st;
+        loop ({ Token.kind = Token.RBracket; span } :: tokens)
     | Some '"' ->
         let span = Span.make file st.line st.col in
         (match readStringLiteral st with
@@ -258,6 +266,7 @@ let tokenize file source =
           | "var" -> Token.Var
           | "true" -> Token.True
           | "false" -> Token.False
+          | "nil" -> Token.Nil
           | "i32" -> Token.Type "i32"
           | "i64" -> Token.Type "i64"
           | "string" -> Token.Type "string"
@@ -272,6 +281,12 @@ let tokenize file source =
           | "struct" -> Token.Struct
           | "enum" -> Token.Enum
           | "switch" -> Token.Switch
+          | "option" -> Token.Option
+          | "result" -> Token.Result
+          | "list" -> Token.List
+          | "map" -> Token.Map
+          | "fixed" -> Token.Fixed
+          | "slice" -> Token.Slice
           | _ -> Token.Ident ident
         in
         loop ({ Token.kind; span } :: tokens)

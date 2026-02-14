@@ -51,6 +51,16 @@ type t =
   | Enum
   | Switch
   | Pipe
+  (* M9: Containers *)
+  | Nil
+  | Option
+  | Result
+  | List
+  | Map
+  | Fixed
+  | Slice
+  | LBracket  (* [ *)
+  | RBracket  (* ] *)
   | EOF
 
 type token = {
@@ -111,6 +121,16 @@ let pp_kind fmt = function
   | Enum -> Format.fprintf fmt "enum"
   | Switch -> Format.fprintf fmt "switch"
   | Pipe -> Format.fprintf fmt "|"
+  (* M9: Container tokens *)
+  | Nil -> Format.fprintf fmt "nil"
+  | Option -> Format.fprintf fmt "option"
+  | Result -> Format.fprintf fmt "result"
+  | List -> Format.fprintf fmt "list"
+  | Map -> Format.fprintf fmt "map"
+  | Fixed -> Format.fprintf fmt "fixed"
+  | Slice -> Format.fprintf fmt "slice"
+  | LBracket -> Format.fprintf fmt "["
+  | RBracket -> Format.fprintf fmt "]"
 
 let pp fmt tok =
   Format.fprintf fmt "%a at %a" pp_kind tok.kind Span.pp tok.span
