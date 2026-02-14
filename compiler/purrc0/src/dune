@@ -2,4 +2,4 @@
  (name purrc0_lib)
  (libraries str)
  (modules span token error lexer ast parser sema ir codegen_c driver)
- (flags (:standard -w -30-8-27)))
+ (flags (:standard -w -30-8-27-39-26)))

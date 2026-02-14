@@ -11,7 +11,7 @@ let escapeString s =
   ) s;
   Buffer.contents buf
 
-let typeToC (ty: Ast.ty) : string =
+let rec typeToC (ty: Ast.ty) : string =
   match ty with
   | Ast.I32 -> "int32_t"
   | Ast.I64 -> "int64_t"
@@ -30,7 +30,7 @@ let typeToC (ty: Ast.ty) : string =
   | Ast.Slice _ -> "void*"  (* slice<T> as opaque pointer *)
   | Ast.Nil -> "void"  (* Nil doesn't really have a C representation *)
 
-let valueToC (v: Ir.value) : string =
+and valueToC (v: Ir.value) : string =
   match v with
   | Ir.IntVal n -> Printf.sprintf "%LdLL" n
   | Ir.BoolVal b -> if b then "1" else "0"
@@ -82,8 +82,8 @@ let generateC ir =
       Buffer.add_string buf (Printf.sprintf "    %s %s;\n" (typeToC field.ty) field.name)
     ) sdef.fields;
     Buffer.add_string buf "};\n\n"
-  ) ir.structs;
-  
+  ) ir.Ir.structs;
+
   (* M8: Generate enum definitions *)
   List.iter (fun (edef: Ast.enum_def) ->
     Buffer.add_string buf (Printf.sprintf "/* enum %s */\n" edef.name);
@@ -93,7 +93,7 @@ let generateC ir =
       incr variant_counter
     ) edef.variants;
     Buffer.add_string buf "\n"
-  ) ir.enums;
+  ) ir.Ir.enums;
   
   
   (* Generate function forward declarations *)
@@ -207,7 +207,7 @@ let generateC ir =
 
     (* TODO: Generate setup_body statements *)
     (* For now, we'll generate placeholder comments *)
-    Buffer.add_string buf (Printf.sprintf "    int64_t __iterations = %dLL;\n" (Int64.of_int bench.iterations));
+    Buffer.add_string buf (Printf.sprintf "    int64_t __iterations = %dLL;\n" bench.iterations);
     Buffer.add_string buf "    for (int64_t __i = 0; __i < __iterations; __i++) {\n";
     Buffer.add_string buf "        /* run_body code would go here */\n";
     Buffer.add_string buf "    }\n";

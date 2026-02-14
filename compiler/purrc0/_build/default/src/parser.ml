@@ -615,7 +615,7 @@ let rec parse_func st =
                           (match tok2.Token.kind with
                            | Token.RBrace ->
                                let _ = advance st in
-                               Ok { name; params; return_ty; body; span = tok.span }
+                               Ok ({ name; params; return_ty; body; span = tok.span } : Ast.func_def)
                            | _ ->
                                Error (Error.fromSpan tok2.span "Expected }"))))))
   | _ ->
@@ -699,7 +699,7 @@ let parse_actor st =
                      (match tok3.Token.kind with
                       | Token.RBrace ->
                           let _ = advance st in
-                          Ok { name; functions; handlers; span = tok.span }
+                          Ok ({ name; functions; handlers; span = tok.span } : Ast.actor_def)
                       | _ ->
                           Error (Error.fromSpan tok3.span "Expected }")))
             | _ ->
@@ -729,7 +729,7 @@ let parse_struct st =
        | Ok (struct_name, _) ->
            let _ = expect st Token.LBrace in
            (* Parse struct fields *)
-           let rec parseFields acc =
+           let rec parseFields (acc: Ast.struct_field list) : (Ast.struct_field list, Error.t) result =
              let tok = current st in
              if tok.Token.kind = Token.RBrace then
                Ok (List.rev acc)
@@ -825,13 +825,7 @@ let parse_bench_decl st =
                             | Error e -> Error e
                             | Ok run_body ->
                                 let _ = expect st Token.RBrace in
-                                Ok (Ast.Bench {
-                                  name;
-                                  iterations;
-                                  setup_body;
-                                  run_body;
-                                  span = tok.span
-                                }))
+                                Ok ({ name; iterations; setup_body; run_body; span = tok.span } : Ast.bench_def))
                        | _ ->
                            Error (Error.fromSpan run_tok.span "Expected 'run' block in bench")))
              | _ ->

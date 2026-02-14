@@ -1,1 +1,1 @@
-src/codegen_c.ml: Ast Buffer Hashtbl Int64 Ir List Printf String
+src/codegen_c.ml: Ast Buffer Hashtbl Ir List Printf String
