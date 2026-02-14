@@ -154,6 +154,15 @@ let rec parse_type st =
        | Ok (elem_ty, _) ->
            let _ = expect st Token.Greater in
            Ok (Ast.Slice elem_ty, tok.span))
+  | Token.Mailbox ->
+      (* M16: Parse mailbox type: mailbox<ActorType> *)
+      ignore (advance st);
+      let _ = expect st Token.Less in
+      (match expectIdent st with
+       | Error e -> Error e
+       | Ok (actor_type, _) ->
+           let _ = expect st Token.Greater in
+           Ok (Ast.Mailbox actor_type, tok.span))
   | _ ->
       Error (Error.fromSpan tok.span "Expected type")
 
@@ -302,6 +311,39 @@ let rec parse_primary st =
        | Error e -> Error e
        | Ok operand ->
            Ok (Ast.UnOp { op = Ast.Neg; operand; span = tok.span }))
+  | Token.Spawn ->
+      (* M16: Parse spawn expression: spawn ActorType { field: value, ... } *)
+      ignore (advance st);
+      (match expectIdent st with
+       | Error e -> Error e
+       | Ok (actor_type, _) ->
+           let _ = expect st Token.LBrace in
+           let rec parse_fields acc =
+             let field_tok = current st in
+             (match field_tok.Token.kind with
+              | Token.RBrace ->
+                  ignore (advance st);
+                  Ok (List.rev acc)
+              | _ ->
+                  (match expectIdent st with
+                   | Error e -> Error e
+                   | Ok (field_name, _) ->
+                       let _ = expect st Token.Colon in
+                       (match parse_expr st with
+                        | Error e -> Error e
+                        | Ok field_expr ->
+                            let next_tok = current st in
+                            if next_tok.Token.kind = Token.Comma then
+                              let _ = advance st in
+                              parse_fields ((field_name, field_expr) :: acc)
+                            else if next_tok.Token.kind = Token.RBrace then
+                              parse_fields ((field_name, field_expr) :: acc)
+                            else
+                              Error (Error.fromSpan next_tok.span "Expected ',' or '}' in spawn literal"))))
+           in
+           (match parse_fields [] with
+            | Error e -> Error e
+            | Ok fields -> Ok (Ast.Spawn { actor_type; fields; span = tok.span })))
   | _ ->
       Error (Error.fromSpan tok.span "Expected primary expression (literal, identifier, or parenthesized expression)")
 
@@ -553,8 +595,47 @@ and parse_stmt st =
       parse_for_stmt st
   | Token.Test ->
       parse_test_decl st
+  | Token.Send ->
+      (* M16: Parse send statement: send target, MessageType { field: value, ... }; *)
+      let _ = advance st in
+      (match parse_expr st with
+       | Error e -> Error e
+       | Ok target ->
+           let _ = expect st Token.Comma in
+           (match expectIdent st with
+            | Error e -> Error e
+            | Ok (message_type, _) ->
+                let _ = expect st Token.LBrace in
+                let rec parse_fields acc =
+                  let field_tok = current st in
+                  (match field_tok.Token.kind with
+                   | Token.RBrace ->
+                       ignore (advance st);
+                       Ok (List.rev acc)
+                   | _ ->
+                       (match expectIdent st with
+                        | Error e -> Error e
+                        | Ok (field_name, _) ->
+                            let _ = expect st Token.Colon in
+                            (match parse_expr st with
+                             | Error e -> Error e
+                             | Ok field_expr ->
+                                 let next_tok = current st in
+                                 if next_tok.Token.kind = Token.Comma then
+                                   let _ = advance st in
+                                   parse_fields ((field_name, field_expr) :: acc)
+                                 else if next_tok.Token.kind = Token.RBrace then
+                                   parse_fields ((field_name, field_expr) :: acc)
+                                 else
+                                   Error (Error.fromSpan next_tok.span "Expected ',' or '}' in send message"))))
+                in
+                (match parse_fields [] with
+                 | Error e -> Error e
+                 | Ok fields ->
+                     let _ = expect st Token.Semicolon in
+                     Ok (Ast.Send { target; message_type; fields; span = tok.span }))))
   | _ ->
-      Error (Error.fromSpan tok.span "Expected statement (print, var, if, for, test, or assignment)")
+      Error (Error.fromSpan tok.span "Expected statement (print, var, if, for, test, send, or assignment)")
 
 and parseStmtList st acc =
   (* Skip optional newlines *)

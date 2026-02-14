@@ -263,6 +263,9 @@ let tokenize file source =
           | "on" -> Token.On
           | "start" -> Token.Start
           | "state" -> Token.State
+          | "spawn" -> Token.Spawn
+          | "send" -> Token.Send
+          | "mailbox" -> Token.Mailbox
           | "print_string" -> Token.Print
           | "var" -> Token.Var
           | "true" -> Token.True

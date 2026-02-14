@@ -101,6 +101,9 @@ let rec inferExprType (expr: Ast.expr) : Ast.ty option =
        | Some (Ast.Map (_, val_ty)) -> Some val_ty
        | Some (Ast.String) -> Some Ast.I32  (* String indexing returns i32 (code point) *)
        | _ -> None)
+  | Ast.Spawn { actor_type; _ } ->
+      (* M16: Spawn expression returns mailbox<ActorType> *)
+      Some (Ast.Mailbox actor_type)
 
 let rec checkExprType (expr: Ast.expr) (expected_ty: Ast.ty) (ctx: context) : (unit, Error.t) result =
   match expr with
@@ -270,6 +273,17 @@ let rec checkExprType (expr: Ast.expr) (expected_ty: Ast.ty) (ctx: context) : (u
                      else Error (Error.fromSpan span (Printf.sprintf "Field %s has type mismatch" field))))
        | Some _ -> Error (Error.fromSpan span "Field access requires struct type")
        | None -> Error (Error.fromSpan span "Cannot infer struct type for field access"))
+  | Ast.Spawn { actor_type; fields; span } ->
+      (* M16: Type check spawn expression *)
+      (match expected_ty with
+       | Ast.Mailbox target_actor when target_actor = actor_type ->
+           (* Check that actor exists *)
+           (* For now, we skip actor type validation - it's done at a higher level *)
+           Ok ()
+       | Ast.Mailbox other_actor ->
+           Error (Error.fromSpan span (Printf.sprintf "Expected mailbox<%s> but got mailbox<%s>" other_actor actor_type))
+       | _ ->
+           Error (Error.fromSpan span (Printf.sprintf "Spawn expression returns mailbox<%s> type" actor_type)))
   | Ast.EnumVariant { enum_name; variant_name; span } ->
       (* M8: Check enum variant matches expected type *)
       (match expected_ty with
@@ -381,6 +395,19 @@ let rec checkStmt (stmt: Ast.stmt) (ctx: context) : (context, Error.t) result =
       (match checkStmtList body ctx with
        | Error e -> Error e
        | Ok _ -> Ok ctx)
+  | Ast.Send { target; message_type; fields; span } ->
+      (* M16: Send statement validation *)
+      (* Check that target is a mailbox type *)
+      (match inferExprType target with
+       | Some (Ast.Mailbox target_actor) ->
+           (* Verify message type exists *)
+           (match Hashtbl.find_opt ctx.messages message_type with
+            | None -> Error (Error.fromSpan span (Printf.sprintf "Unknown message type: %s" message_type))
+            | Some _ -> Ok ctx)  (* Message field type checking would go here *)
+       | Some other_type ->
+           Error (Error.fromSpan span "Send requires a mailbox target")
+       | None ->
+           Error (Error.fromSpan span "Cannot infer type of send target"))
 
 and checkStmtList (stmts: Ast.stmt list) (ctx: context) : (context, Error.t) result =
   match stmts with

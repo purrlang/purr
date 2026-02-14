@@ -1,4 +1,4 @@
-# dune build
+# dune build --verbose
 # OCAMLPARAM: unset
 # Shared cache: disabled
 # Shared cache location: /root/.cache/dune/db
@@ -15,4 +15,6 @@
 #      map { "INSIDE_DUNE" : "/home/user/purr/compiler/purrc0/_build/default" }
 #  ; instrument_with = []
 #  }
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_3f3658_output
+$ /usr/bin/ocamlc.opt -config > /tmp/dune_b15bdc_output
+# Actual targets:
+# - alias @@default

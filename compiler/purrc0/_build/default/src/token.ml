@@ -3,6 +3,9 @@ type t =
   | On
   | Start
   | State  (* M15: Actor state fields *)
+  | Spawn  (* M16: Spawn actor instances *)
+  | Send   (* M16: Send messages to actors *)
+  | Mailbox (* M16: Mailbox type for actor references *)
   | Print
   | Var
   | True

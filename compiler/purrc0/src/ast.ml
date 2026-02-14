@@ -14,6 +14,7 @@ type ty =
   | Fixed of ty * int  (* fixed<T, N> - array of N elements *)
   | Slice of ty  (* slice<T> - dynamic array slice *)
   | Nil  (* nil literal type for options *)
+  | Mailbox of string  (* M16: Mailbox type for actor references - stores actor type name *)
 
 (* M3: Operator types *)
 type binop =
@@ -45,6 +46,8 @@ type expr =
   | ErrLit of { error: expr; span: Span.t }  (* Err(expr) *)
   | ListLit of { elements: expr list; span: Span.t }  (* [elem1, elem2, ...] *)
   | IndexAccess of { object_: expr; index: expr; span: Span.t }  (* obj[index] *)
+  (* M16: Actor operations *)
+  | Spawn of { actor_type: string; fields: (string * expr) list; span: Span.t }  (* spawn ActorType { field: value, ... } *)
 
 type program = {
   structs: struct_def list;  (* M7: Struct definitions *)
@@ -146,6 +149,13 @@ and stmt =
   | Test of {
     name: string;
     body: stmt list;
+    span: Span.t;
+  }
+  (* M16: Send message to actor *)
+  | Send of {
+    target: expr;  (* Expression that evaluates to a mailbox *)
+    message_type: string;  (* Type of message to send *)
+    fields: (string * expr) list;  (* Message field values *)
     span: Span.t;
   }
 
