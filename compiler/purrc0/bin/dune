@@ -1,0 +1,4 @@
+(executable
+ (name purrc0)
+ (modules main)
+ (libraries purrc0_lib))

@@ -1,0 +1,21 @@
+actor Main {
+    fn add(x: i32, y: i32) -> i32 {
+        return (x + y)
+    }
+    
+    fn multiply(a: i32, b: i32) -> i32 {
+        var result = (a * b)
+        return result
+    }
+    
+    handler receive(request: mailbox<String>) {
+        var sum = add(5, 3)
+        print_i32(sum)
+        
+        var product = multiply(4, 7)
+        print_i32(product)
+        
+        var chained = add(multiply(2, 3), 4)
+        print_i32(chained)
+    }
+}

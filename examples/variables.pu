@@ -1,0 +1,10 @@
+actor Main {
+    handler receive(request: mailbox<String>) {
+        var x: i32 = 42
+        var y = 100
+        var greeting = "hello"
+        print_string(greeting)
+        print_i32(x)
+        print_i32(y)
+    }
+}

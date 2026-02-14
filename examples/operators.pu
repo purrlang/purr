@@ -1,0 +1,17 @@
+actor Main {
+    handler receive(request: mailbox<String>) {
+        var x: i32 = 10
+        var y: i32 = 5
+        var sum = (x + y)
+        print_i32(sum)
+        
+        var product = (x * y)
+        print_i32(product)
+        
+        var comparison = (x > y)
+        print_bool(comparison)
+        
+        var logic = (comparison && true)
+        print_bool(logic)
+    }
+}

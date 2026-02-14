@@ -1,0 +1,29 @@
+actor TestActor {
+    fn main() {
+        // M5: If/else conditional
+        var x: i32 = 10;
+        if (x > 5) {
+            print("x is greater than 5");
+        } else {
+            print("x is not greater than 5");
+        };
+        
+        // M5: For loop (0 to 4)
+        var i: i32 = 0;
+        for i in 0, 5 {
+            print(i);
+        };
+        
+        // Nested if/else
+        var y: i32 = 20;
+        if (x < y) {
+            if (y > 15) {
+                print("y is greater than 15");
+            } else {
+                print("y is not greater than 15");
+            };
+        } else {
+            print("x is not less than y");
+        };
+    }
+}
