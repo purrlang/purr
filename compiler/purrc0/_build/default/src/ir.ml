@@ -157,6 +157,23 @@ let rec generateExprInstructions (expr: Ast.expr) (var_types: (string, Ast.ty) H
            let (obj_instrs, obj_val, tc') = generateExprInstructions object_ var_types temp_counter enums in
            temp_counter := !tc';
            (obj_instrs, obj_val, temp_counter))  (* Simplified: return object value *)
+  | Ast.Spawn { actor_type; fields; span } ->
+      (* M16: Spawn expression - evaluate all field values *)
+      let rec eval_fields field_list acc_instrs acc_vals tc =
+        match field_list with
+        | [] -> (List.rev acc_instrs, List.rev acc_vals, tc)
+        | (fname, fexpr) :: rest ->
+            let (finstrs, fval, tc') = generateExprInstructions fexpr var_types (ref !tc) enums in
+            tc := !tc';
+            eval_fields rest (acc_instrs @ finstrs) ((fname, fval) :: acc_vals) tc'
+      in
+      let (field_instrs, field_vals, tc2) = eval_fields fields [] [] temp_counter in
+      let temp_name = Printf.sprintf "__temp_%d" !tc2 in
+      incr tc2;
+      let result_ty = Ast.Mailbox actor_type in
+      Hashtbl.replace var_types temp_name result_ty;
+      let spawn_val = StructVal (Printf.sprintf "__spawn_%s" actor_type, field_vals) in
+      (field_instrs @ [Assign { name = temp_name; value = spawn_val }], VarRef temp_name, tc2)
 
 let lower program =
   (* Generate IR for all functions and handlers *)
@@ -489,6 +506,9 @@ let lower program =
         | Ast.Test { name; body; _ } ->
             (* M5: Test declaration - placeholder *)
             ()
+        | Ast.Send { target; message_type; fields; _ } ->
+            (* M16: Send statement - placeholder for now *)
+            ()
       ) func.body;
       
       let func_ir = {
@@ -576,6 +596,9 @@ let lower program =
                  else
                    let v = exprToValue expr in
                    body_instrs := !body_instrs @ [Return (Some v)])
+        | Ast.Send { target; message_type; fields; _ } ->
+            (* M16: Send statement - placeholder for now *)
+            ()
       ) handler.body;
       
       let body = !body_instrs @ [Return None] in
