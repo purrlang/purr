@@ -9,11 +9,15 @@ type struct_def = { name: string; fields: (string * Ast.ty) list; span: Span.t }
 (* M8: Enum definition tracking *)
 type enum_def = { name: string; variants: string list; span: Span.t }
 
+(* M14: Message definition tracking *)
+type message_def = { name: string; fields: (string * Ast.ty) list; span: Span.t }
+
 type context = {
   symbols: symbol list;
   functions: (string, func_sig) Hashtbl.t;  (* M4: Track function signatures *)
   structs: (string, struct_def) Hashtbl.t;  (* M7: Track struct definitions *)
   enums: (string, enum_def) Hashtbl.t;  (* M8: Track enum definitions *)
+  messages: (string, message_def) Hashtbl.t;  (* M14: Track message definitions *)
 }
 
 let rec inferExprType (expr: Ast.expr) : Ast.ty option =
@@ -386,8 +390,8 @@ and checkStmtList (stmts: Ast.stmt list) (ctx: context) : (context, Error.t) res
        | Error e -> Error e
        | Ok ctx' -> checkStmtList rest ctx')
 
-let checkHandler (handler: Ast.handler) (func_table: (string, func_sig) Hashtbl.t) (struct_table: (string, struct_def) Hashtbl.t) (enum_table: (string, enum_def) Hashtbl.t) : (unit, Error.t) result =
-  let init_ctx = { symbols = []; functions = func_table; structs = struct_table; enums = enum_table } in
+let checkHandler (handler: Ast.handler) (func_table: (string, func_sig) Hashtbl.t) (struct_table: (string, struct_def) Hashtbl.t) (enum_table: (string, enum_def) Hashtbl.t) (message_table: (string, message_def) Hashtbl.t) : (unit, Error.t) result =
+  let init_ctx = { symbols = []; functions = func_table; structs = struct_table; enums = enum_table; messages = message_table } in
   match checkStmtList handler.Ast.body init_ctx with
   | Error e -> Error e
   | Ok _ -> Ok ()
@@ -407,9 +411,9 @@ let add_predeclared_functions func_table =
 
 let checkProgram program =
   (* M7: Build struct table *)
-  let struct_table = Hashtbl.create 16 in
+  let struct_table : (string, struct_def) Hashtbl.t = Hashtbl.create 16 in
   List.iter (fun (sdef: Ast.struct_def) ->
-    Hashtbl.add struct_table sdef.name { 
+    Hashtbl.add struct_table sdef.name {
       name = sdef.name;
       fields = List.map (fun (f: Ast.struct_field) -> (f.name, f.ty)) sdef.fields;
       span = sdef.span;
@@ -417,7 +421,7 @@ let checkProgram program =
   ) program.Ast.structs;
 
   (* M8: Build enum table *)
-  let enum_table = Hashtbl.create 16 in
+  let enum_table : (string, enum_def) Hashtbl.t = Hashtbl.create 16 in
   List.iter (fun (edef: Ast.enum_def) ->
     Hashtbl.add enum_table edef.name {
       name = edef.name;
@@ -426,8 +430,30 @@ let checkProgram program =
     }
   ) program.Ast.enums;
 
+  (* M14: Build message table *)
+  let message_table : (string, message_def) Hashtbl.t = Hashtbl.create 16 in
+  List.iter (fun (mdef: Ast.message_def) ->
+    Hashtbl.add message_table mdef.name {
+      name = mdef.name;
+      fields = List.map (fun (f: Ast.struct_field) -> (f.name, f.ty)) mdef.fields;
+      span = mdef.span;
+    }
+  ) program.Ast.messages;
+
   (* Initialize errors list *)
   let errors = ref [] in
+
+  (* M14: Validate message declarations *)
+  List.iter (fun (mdef: Ast.message_def) ->
+    (* Check for duplicate names with structs *)
+    if Hashtbl.mem struct_table mdef.name then
+      errors := Error.fromSpan mdef.span
+        (Printf.sprintf "Message '%s' conflicts with struct of the same name" mdef.name) :: !errors;
+    (* Check for duplicate names with enums *)
+    if Hashtbl.mem enum_table mdef.name then
+      errors := Error.fromSpan mdef.span
+        (Printf.sprintf "Message '%s' conflicts with enum of the same name" mdef.name) :: !errors
+  ) program.Ast.messages;
 
   (* M10.5: Validate benchmark declarations *)
   let bench_names = Hashtbl.create 16 in
@@ -479,18 +505,19 @@ let checkProgram program =
     
     (* Check function bodies *)
     List.iter (fun (func: Ast.func_def) ->
-      let init_ctx = { 
+      let init_ctx = {
         symbols = List.map (fun (p: Ast.param) -> { name = p.name; ty = p.ty; span = p.span }) func.params;
         functions = func_table;
         structs = struct_table;  (* M7: Pass struct table *)
         enums = enum_table;  (* M8: Pass enum table *)
+        messages = message_table;  (* M14: Pass message table *)
       } in
       match checkStmtList func.body init_ctx with
       | Error e -> errors := e :: !errors
       | Ok _ -> ()
     ) actor.functions;
     List.iter (fun (handler: Ast.handler) ->
-      match checkHandler handler func_table struct_table enum_table with  (* M8: Pass enum table *)
+      match checkHandler handler func_table struct_table enum_table message_table with  (* M8: Pass enum table, M14: Pass message table *)
       | Ok () -> ()
       | Error e -> errors := e :: !errors
     ) actor.handlers
@@ -508,6 +535,7 @@ let checkProgram program =
       functions = func_table;
       structs = struct_table;
       enums = enum_table;
+      messages = message_table;
     } in
     (match checkStmtList bench.setup_body init_ctx with
     | Error e -> errors := e :: !errors

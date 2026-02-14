@@ -94,8 +94,16 @@ let generateC ir =
     ) edef.variants;
     Buffer.add_string buf "\n"
   ) ir.Ir.enums;
-  
-  
+
+  (* M14: Generate message definitions (as structs for now) *)
+  List.iter (fun (mdef: Ast.message_def) ->
+    Buffer.add_string buf (Printf.sprintf "struct %s {\n" mdef.name);
+    List.iter (fun (field: Ast.struct_field) ->
+      Buffer.add_string buf (Printf.sprintf "    %s %s;\n" (typeToC field.ty) field.name)
+    ) mdef.fields;
+    Buffer.add_string buf "};\n\n"
+  ) ir.Ir.messages;
+
   (* Generate function forward declarations *)
   List.iter (fun (func: Ir.func) ->
     let return_type = typeToC func.return_ty in

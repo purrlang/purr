@@ -35,6 +35,7 @@ type func = {
 type program_ir = {
   structs: Ast.struct_def list;  (* M7: Struct definitions *)
   enums: Ast.enum_def list;  (* M8: Enum definitions *)
+  messages: Ast.message_def list;  (* M14: Message definitions *)
   benches: Ast.bench_def list;  (* M10.5: Benchmark definitions *)
   entry: func_id;
   functions: func list;
@@ -595,6 +596,7 @@ let lower program =
   {
     structs = program.Ast.structs;  (* M7: Include struct definitions *)
     enums = program.Ast.enums;  (* M8: Include enum definitions *)
+    messages = program.Ast.messages;  (* M14: Include message definitions *)
     benches = program.Ast.benches;  (* M10.5: Include benchmark definitions *)
     entry = entry;
     functions = List.rev !functions;
