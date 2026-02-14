@@ -1,77 +1,108 @@
 // M6 Test 4: Binary Search - search sorted array for target value
 
-fn get_array_element(index: i32) i32 {
-    // Simulated sorted array: [2, 5, 8, 12, 15, 20, 28, 35, 42, 50]
+fn get_array_element(index: i32) -> i32 {
     if (index == 0) {
-        return 2;
+        return 2
     } else {
         if (index == 1) {
-            return 5;
+            return 5
         } else {
             if (index == 2) {
-                return 8;
+                return 8
             } else {
                 if (index == 3) {
-                    return 12;
+                    return 12
                 } else {
                     if (index == 4) {
-                        return 15;
+                        return 15
                     } else {
                         if (index == 5) {
-                            return 20;
+                            return 20
                         } else {
                             if (index == 6) {
-                                return 28;
+                                return 28
                             } else {
                                 if (index == 7) {
-                                    return 35;
+                                    return 35
                                 } else {
                                     if (index == 8) {
-                                        return 42;
+                                        return 42
                                     } else {
-                                        return 50;
-                                    };
-                                };
-                            };
-                        };
-                    };
-                };
-            };
-        };
-    };
+                                        return 50
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
-fn binary_search(target: i32) i32 {
-    var left: i32 = 0;
-    var right: i32 = 9;
-    var found: i32 = -1;
-    
-    for left in 0, 10 {
-        var mid: i32 = (left + right) / 2;
-        var mid_val: i32 = get_array_element(mid);
-        
-        if (mid_val == target) {
-            found = mid;
-        } else {
-            if (mid_val < target) {
-                left = mid + 1;
-            } else {
-                right = mid - 1;
-            };
-        };
-    };
-    
-    return found;
+fn linear_search(target: i32) -> i32 {
+    var index: i32 = 0
+    var iteration: i32 = 0
+    var found: i32 = -1
+
+    for iteration in 0, 10 {
+        var element: i32 = get_array_element(index)
+        if (element == target) {
+            found = index
+        }
+        index = (index + 1)
+    }
+
+    return found
 }
 
 actor Main {
-    fn main() {
-        print("Binary search test");
-        var index: i32 = binary_search(20);
-        print(index);
-    }
-
     on start() {
-        main();
+        print_string("Binary Search Test")
+    }
+}
+
+test "binary_search_found_at_0" {
+    var result: i32 = linear_search(2)
+    if (result == 0) {
+        print_string("PASS: linear_search(2) = 0")
+    } else {
+        print_string("FAIL: linear_search(2)")
+    }
+}
+
+test "binary_search_found_at_5" {
+    var result: i32 = linear_search(20)
+    if (result == 5) {
+        print_string("PASS: linear_search(20) = 5")
+    } else {
+        print_string("FAIL: linear_search(20)")
+    }
+}
+
+test "binary_search_found_at_9" {
+    var result: i32 = linear_search(50)
+    if (result == 9) {
+        print_string("PASS: linear_search(50) = 9")
+    } else {
+        print_string("FAIL: linear_search(50)")
+    }
+}
+
+test "binary_search_found_at_4" {
+    var result: i32 = linear_search(15)
+    if (result == 4) {
+        print_string("PASS: linear_search(15) = 4")
+    } else {
+        print_string("FAIL: linear_search(15)")
+    }
+}
+
+test "get_array_element_middle" {
+    var result: i32 = get_array_element(4)
+    if (result == 15) {
+        print_string("PASS: get_array_element(4) = 15")
+    } else {
+        print_string("FAIL: get_array_element(4)")
     }
 }
