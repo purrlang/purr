@@ -17,6 +17,8 @@ let typeToC (ty: Ast.ty) : string =
   | Ast.I64 -> "int64_t"
   | Ast.String -> "const char*"
   | Ast.Bool -> "_Bool"
+  | Ast.Struct name -> Printf.sprintf "struct %s" name (* M7: Struct types *)
+  | Ast.Enum name -> "int"  (* M8: Enum types represented as int *)
 
 let valueToC (v: Ir.value) : string =
   match v with
@@ -24,6 +26,12 @@ let valueToC (v: Ir.value) : string =
   | Ir.BoolVal b -> if b then "1" else "0"
   | Ir.StringVal s -> Printf.sprintf "\"%s\"" (escapeString s)
   | Ir.VarRef name -> name
+  | Ir.StructVal (struct_name, _) -> 
+      (* M7: For struct values, we'd generate initializer - simplified for now *)
+      Printf.sprintf "{0}"  (* Placeholder struct initializer *)
+  | Ir.EnumVal (enum_name, variant_name) ->
+      (* M8: Enum values represented as enum constants *)
+      Printf.sprintf "%s_%s" enum_name variant_name
 
 let binopToC (op: Ast.binop) : string =
   match op with
@@ -53,6 +61,27 @@ let generateC ir =
   Buffer.add_string buf "#include \"purr_runtime.h\"\n";
   Buffer.add_string buf "#include <stdint.h>\n";
   Buffer.add_string buf "#include <stdbool.h>\n\n";
+  
+  (* M7: Generate struct definitions *)
+  List.iter (fun (sdef: Ast.struct_def) ->
+    Buffer.add_string buf (Printf.sprintf "struct %s {\n" sdef.name);
+    List.iter (fun (field: Ast.struct_field) ->
+      Buffer.add_string buf (Printf.sprintf "    %s %s;\n" (typeToC field.ty) field.name)
+    ) sdef.fields;
+    Buffer.add_string buf "};\n\n"
+  ) ir.structs;
+  
+  (* M8: Generate enum definitions *)
+  List.iter (fun (edef: Ast.enum_def) ->
+    Buffer.add_string buf (Printf.sprintf "/* enum %s */\n" edef.name);
+    let variant_counter = ref 0 in
+    List.iter (fun (variant: Ast.enum_variant) ->
+      Buffer.add_string buf (Printf.sprintf "#define %s_%s %d\n" edef.name variant.name !variant_counter);
+      incr variant_counter
+    ) edef.variants;
+    Buffer.add_string buf "\n"
+  ) ir.enums;
+  
   
   (* Generate functions *)
   List.iter (fun (func: Ir.func) ->
@@ -109,6 +138,7 @@ let generateC ir =
                 | Some Ast.I64 -> Buffer.add_string buf (Printf.sprintf "    print_i64(%s);\n" name)
                 | Some Ast.String -> Buffer.add_string buf (Printf.sprintf "    print_string(%s);\n" name)
                 | Some Ast.Bool -> Buffer.add_string buf (Printf.sprintf "    print_bool(%s);\n" name)
+                | Some (Ast.Enum _) -> Buffer.add_string buf (Printf.sprintf "    print_i64((int64_t)%s); /* enum value */\n" name)
                 | None -> Buffer.add_string buf (Printf.sprintf "    print_i64((int64_t)%s); /* unknown type */\n" name)))
       | Ir.Return ret_val ->
           (* M4: Return statement *)
@@ -118,13 +148,17 @@ let generateC ir =
                let v_str = valueToC v in
                Buffer.add_string buf (Printf.sprintf "    return %s;\n" v_str))
       (* M5: Control flow instructions *)
-      | Ir.IfJump { condition; true_label; false_label } ->
+      | Ir.JumpIfFalse { condition; label } ->
           let cond_str = valueToC condition in
-          Buffer.add_string buf (Printf.sprintf "    if (%s) goto %s; else goto %s;\n" cond_str true_label false_label)
-      | Ir.Goto label ->
+          Buffer.add_string buf (Printf.sprintf "    if (!(%s)) goto %s;\n" cond_str label)
+      | Ir.Jump label ->
           Buffer.add_string buf (Printf.sprintf "    goto %s;\n" label)
       | Ir.Label label ->
           Buffer.add_string buf (Printf.sprintf "%s:\n" label)
+      (* M7: Field assignment *)
+      | Ir.FieldAssign { object_name; field; value; field_ty } ->
+          let v_str = valueToC value in
+          Buffer.add_string buf (Printf.sprintf "    %s.%s = %s;\n" object_name field v_str)
     ) func.body;
     
     Buffer.add_string buf "}\n\n"

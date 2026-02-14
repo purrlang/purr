@@ -167,6 +167,35 @@ let rec parse_primary st =
            (match parse_args [] with
             | Error e -> Error e
             | Ok args -> Ok (Ast.Call { name; args; span }))
+       | Token.LBrace ->
+           (* M7: Struct literal *)
+           ignore (advance st);
+           let rec parse_fields acc =
+             let field_tok = current st in
+             (match field_tok.Token.kind with
+              | Token.RBrace ->
+                  ignore (advance st);
+                  Ok (List.rev acc)
+              | _ ->
+                  (match expectIdent st with
+                   | Error e -> Error e
+                   | Ok (field_name, _) ->
+                       let _ = expect st Token.Colon in
+                       (match parse_expr st with
+                        | Error e -> Error e
+                        | Ok field_expr ->
+                            let next_tok = current st in
+                            if next_tok.Token.kind = Token.Comma then
+                              let _ = advance st in
+                              parse_fields ((field_name, field_expr) :: acc)
+                            else if next_tok.Token.kind = Token.RBrace then
+                              parse_fields ((field_name, field_expr) :: acc)
+                            else
+                              Error (Error.fromSpan next_tok.span "Expected ',' or '}' in struct literal"))))
+           in
+           (match parse_fields [] with
+            | Error e -> Error e
+            | Ok fields -> Ok (Ast.StructLit { struct_name = name; fields; span }))
        | _ ->
            (* Just an identifier *)
            Ok (Ast.Ident (name, span)))
@@ -211,30 +240,47 @@ and parse_binop_in_category st left_expr category =
        | None -> Ok left_expr)
   | _ -> Ok left_expr
 
+(* M7: Apply postfix operations (field access) *)
+let rec apply_postfix st expr =
+  let tok = current st in
+  match tok.Token.kind with
+  | Token.Dot ->
+      ignore (advance st);
+      (match expectIdent st with
+       | Error e -> Error e
+       | Ok (field_name, _) ->
+           let field_expr = Ast.FieldAccess { object_ = expr; field = field_name; span = tok.span } in
+           apply_postfix st field_expr)
+  | _ -> Ok expr
+
 (* Parse a full expression with mandatory parenthesization between categories *)
 and parse_expr st =
   match parse_primary st with
   | Error e -> Error e
   | Ok primary_expr ->
-      (* Check if there's a binary operator *)
-      let tok = current st in
-      let cat = op_category tok.Token.kind in
-      if cat < 0 then
-        Ok primary_expr
-      else
-        (* Parse the first category *)
-        match parse_binop_in_category st primary_expr cat with
-        | Error e -> Error e
-        | Ok expr1 ->
-            (* Check if there's another operator from a different category *)
-            let tok2 = current st in
-            let cat2 = op_category tok2.Token.kind in
-            if cat2 < 0 || cat2 = cat then
-              Ok expr1
-            else
-              (* Different category - require parentheses *)
-              Error (Error.fromSpan tok2.span 
-                "Operators from different categories must be parenthesized (e.g., (a + b) * c not a + b * c)")
+      (match apply_postfix st primary_expr with
+       | Error e -> Error e
+       | Ok postfix_expr ->
+           (* Check if there's a binary operator *)
+           let tok = current st in
+           let cat = op_category tok.Token.kind in
+           if cat < 0 then
+             Ok postfix_expr
+           else
+             (* Parse the first category *)
+             match parse_binop_in_category st postfix_expr cat with
+             | Error e -> Error e
+             | Ok expr1 ->
+                 (* Check if there's another operator from a different category *)
+                 let tok2 = current st in
+                 let cat2 = op_category tok2.Token.kind in
+                 if cat2 < 0 || cat2 = cat then
+                   Ok expr1
+                 else
+                   (* Different category - require parentheses *)
+                   Error (Error.fromSpan tok2.span 
+                     "Operators from different categories must be parenthesized (e.g., (a + b) * c not a + b * c)"))
+
 
 (* M5: Parse if/else statement *)
 and parse_if_stmt st =
@@ -562,6 +608,101 @@ let rec parseActorList st acc =
   | _ ->
       Error (Error.fromSpan tok.span "Expected 'actor' or EOF")
 
+(* M7: Parse struct definition *)
+let parse_struct st =
+  let tok = current st in
+  match tok.Token.kind with
+  | Token.Struct ->
+      let _ = advance st in
+      (match expectIdent st with
+       | Error e -> Error e
+       | Ok (struct_name, _) ->
+           let _ = expect st Token.LBrace in
+           (* Parse struct fields *)
+           let rec parseFields acc =
+             let tok = current st in
+             if tok.Token.kind = Token.RBrace then
+               Ok (List.rev acc)
+             else
+               (match expectIdent st with
+                | Error e -> Error e
+                | Ok (field_name, _) ->
+                    let _ = expect st Token.Colon in
+                    (match expectType st with
+                     | Error e -> Error e
+                     | Ok (ty, _) ->
+                         let tok2 = current st in
+                         if tok2.Token.kind = Token.Comma then
+                           let _ = advance st in
+                           parseFields ({ Ast.name = field_name; ty; span = tok.span } :: acc)
+                         else
+                           parseFields ({ Ast.name = field_name; ty; span = tok.span } :: acc)))
+           in
+           (match parseFields [] with
+            | Error e -> Error e
+            | Ok fields ->
+                let _ = expect st Token.RBrace in
+                Ok { Ast.name = struct_name; fields; span = tok.span }))
+  | _ ->
+      Error (Error.fromSpan tok.span "Expected 'struct'")
+
+(* M8: Parse enum definition *)
+let parse_enum st =
+  let tok = current st in
+  match tok.Token.kind with
+  | Token.Enum ->
+      let _ = advance st in
+      (match expectIdent st with
+       | Error e -> Error e
+       | Ok (enum_name, _) ->
+           let _ = expect st Token.LBrace in
+           (* Parse enum variants separated by pipes *)
+           let rec parseVariants acc =
+             let tok = current st in
+             if tok.Token.kind = Token.RBrace then
+               Ok (List.rev acc)
+             else
+               (match expectIdent st with
+                | Error e -> Error e
+                | Ok (variant_name, _) ->
+                    let variant = { Ast.name = variant_name; span = tok.span } in
+                    let tok2 = current st in
+                    if tok2.Token.kind = Token.Pipe then
+                      let _ = advance st in
+                      parseVariants (variant :: acc)
+                    else if tok2.Token.kind = Token.RBrace then
+                      parseVariants (variant :: acc)
+                    else
+                      Error (Error.fromSpan tok2.span "Expected '|' or '}' in enum definition"))
+           in
+           (match parseVariants [] with
+            | Error e -> Error e
+            | Ok variants ->
+                let _ = expect st Token.RBrace in
+                Ok { Ast.name = enum_name; variants; span = tok.span }))
+  | _ ->
+      Error (Error.fromSpan tok.span "Expected 'enum'")
+
+let rec parseStructEnumAndActors st structs enums actors =
+  let tok = current st in
+  match tok.Token.kind with
+  | Token.EOF -> 
+      Ok { Ast.structs = List.rev structs; enums = List.rev enums; actors = List.rev actors }
+  | Token.Struct ->
+      (match parse_struct st with
+       | Error e -> Error e
+       | Ok struct_def -> parseStructEnumAndActors st (struct_def :: structs) enums actors)
+  | Token.Enum ->
+      (match parse_enum st with
+       | Error e -> Error e
+       | Ok enum_def -> parseStructEnumAndActors st structs (enum_def :: enums) actors)
+  | Token.Actor ->
+      (match parse_actor st with
+       | Error e -> Error e
+       | Ok actor -> parseStructEnumAndActors st structs enums (actor :: actors))
+  | _ ->
+      Error (Error.fromSpan tok.span "Expected 'struct', 'enum', 'actor', or EOF")
+
 let parse tokens =
   let st = make tokens in
-  parseActorList st []
+  parseStructEnumAndActors st [] [] []

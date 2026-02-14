@@ -44,6 +44,13 @@ type t =
   | For
   | In
   | Test
+  (* M7: Structs *)
+  | Struct
+  | Dot
+  (* M8: Enums & Switch *)
+  | Enum
+  | Switch
+  | Pipe
   | EOF
 
 type token = {
@@ -97,6 +104,13 @@ let pp_kind fmt = function
   | For -> Format.fprintf fmt "for"
   | In -> Format.fprintf fmt "in"
   | Test -> Format.fprintf fmt "test"
+  (* M7: Struct tokens *)
+  | Struct -> Format.fprintf fmt "struct"
+  | Dot -> Format.fprintf fmt "."
+  (* M8: Enum & Switch tokens *)
+  | Enum -> Format.fprintf fmt "enum"
+  | Switch -> Format.fprintf fmt "switch"
+  | Pipe -> Format.fprintf fmt "|"
 
 let pp fmt tok =
   Format.fprintf fmt "%a at %a" pp_kind tok.kind Span.pp tok.span

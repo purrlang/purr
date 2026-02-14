@@ -1,0 +1,45 @@
+// M7 Example: Structs with field access
+
+struct Point {
+    x: i32
+    y: i32
+}
+
+struct Rectangle {
+    top_left: Point
+    width: i32
+    height: i32
+}
+
+actor Main {
+    fn create_point(px: i32, py: i32) Point {
+        var p: Point = Point { x: px, y: py };
+        return p;
+    }
+
+    fn get_area(r: Rectangle) i32 {
+        var area: i32 = r.width * r.height;
+        return area;
+    }
+
+    on start() {
+        var point1: Point = Point { x: 10, y: 20 };
+        var point2: Point = create_point(5, 15);
+        
+        print("Point1 x: ");
+        print(point1.x);
+        
+        print("Point2 y: ");
+        print(point2.y);
+        
+        var rect: Rectangle = Rectangle { 
+            top_left: point1, 
+            width: 100, 
+            height: 50 
+        };
+        
+        var area: i32 = get_area(rect);
+        print("Rectangle area: ");
+        print(area);
+    }
+}

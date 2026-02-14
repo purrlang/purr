@@ -196,7 +196,8 @@ let tokenize file source =
             advance st;
             loop ({ Token.kind = Token.Or; span } :: tokens)
         | _ ->
-            Error (Error.make file span.Span.line span.Span.col "Expected '|' after '|'"))
+            (* M8: Single pipe for enum variants *)
+            loop ({ Token.kind = Token.Pipe; span } :: tokens))
     | Some ';' ->
         let span = Span.make file st.line st.col in
         advance st;
@@ -230,6 +231,10 @@ let tokenize file source =
         let span = Span.make file st.line st.col in
         advance st;
         loop ({ Token.kind = Token.Comma; span } :: tokens)
+    | Some '.' ->
+        let span = Span.make file st.line st.col in
+        advance st;
+        loop ({ Token.kind = Token.Dot; span } :: tokens)
     | Some '"' ->
         let span = Span.make file st.line st.col in
         (match readStringLiteral st with
@@ -264,6 +269,9 @@ let tokenize file source =
           | "for" -> Token.For
           | "in" -> Token.In
           | "test" -> Token.Test
+          | "struct" -> Token.Struct
+          | "enum" -> Token.Enum
+          | "switch" -> Token.Switch
           | _ -> Token.Ident ident
         in
         loop ({ Token.kind; span } :: tokens)

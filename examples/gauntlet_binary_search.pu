@@ -1,0 +1,77 @@
+// M6 Test 4: Binary Search - search sorted array for target value
+
+fn get_array_element(index: i32) i32 {
+    // Simulated sorted array: [2, 5, 8, 12, 15, 20, 28, 35, 42, 50]
+    if (index == 0) {
+        return 2;
+    } else {
+        if (index == 1) {
+            return 5;
+        } else {
+            if (index == 2) {
+                return 8;
+            } else {
+                if (index == 3) {
+                    return 12;
+                } else {
+                    if (index == 4) {
+                        return 15;
+                    } else {
+                        if (index == 5) {
+                            return 20;
+                        } else {
+                            if (index == 6) {
+                                return 28;
+                            } else {
+                                if (index == 7) {
+                                    return 35;
+                                } else {
+                                    if (index == 8) {
+                                        return 42;
+                                    } else {
+                                        return 50;
+                                    };
+                                };
+                            };
+                        };
+                    };
+                };
+            };
+        };
+    };
+}
+
+fn binary_search(target: i32) i32 {
+    var left: i32 = 0;
+    var right: i32 = 9;
+    var found: i32 = -1;
+    
+    for left in 0, 10 {
+        var mid: i32 = (left + right) / 2;
+        var mid_val: i32 = get_array_element(mid);
+        
+        if (mid_val == target) {
+            found = mid;
+        } else {
+            if (mid_val < target) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
+            };
+        };
+    };
+    
+    return found;
+}
+
+actor Main {
+    fn main() {
+        print("Binary search test");
+        var index: i32 = binary_search(20);
+        print(index);
+    }
+
+    on start() {
+        main();
+    }
+}

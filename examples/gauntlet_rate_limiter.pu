@@ -1,0 +1,46 @@
+// M6 Test 2: Rate Limiter - token bucket with counter checks
+
+fn has_capacity(available: i32, required: i32) i32 {
+    if (available >= required) {
+        return 1;
+    } else {
+        return 0;
+    };
+}
+
+fn consume_tokens(available: i32, amount: i32) i32 {
+    var result: i32 = available - amount;
+    return result;
+}
+
+fn refill_tokens(available: i32, refill: i32) i32 {
+    var max_tokens: i32 = 100;
+    var new_available: i32 = available + refill;
+    if (new_available > max_tokens) {
+        return max_tokens;
+    } else {
+        return new_available;
+    };
+}
+
+actor Main {
+    fn main() {
+        print("Testing rate limiter");
+        var tokens: i32 = 50;
+        var request_size: i32 = 20;
+        
+        if (has_capacity(tokens, request_size) == 1) {
+            tokens = consume_tokens(tokens, request_size);
+            print("Request accepted");
+        } else {
+            print("Request rejected");
+        };
+        
+        tokens = refill_tokens(tokens, 30);
+        print(tokens);
+    }
+
+    on start() {
+        main();
+    }
+}

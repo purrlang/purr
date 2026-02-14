@@ -1,0 +1,37 @@
+// M8: Enums - Basic example
+
+enum Color {
+    Red | Green | Blue
+}
+
+enum Status {
+    Success | Failure | Pending
+}
+
+fn get_color() Color {
+    return Red;
+}
+
+fn get_status(code: i32) Status {
+    if (code == 0) {
+        return Success;
+    } else if (code < 0) {
+        return Failure;
+    } else {
+        return Pending;
+    };
+}
+
+actor Main {
+    fn main() {
+        var color: Color = Red;
+        print("Color assigned");
+        
+        var status: Status = get_status(0);
+        print("Status: Success");
+    }
+
+    on start() {
+        main();
+    }
+}

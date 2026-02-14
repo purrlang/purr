@@ -1,0 +1,152 @@
+// M6+ Gauntlet: Bloom Filter - probabilistic set membership test
+
+// Simulate a small bit array using modular arithmetic
+// We'll use a single i32 to represent 32 bits, or multiple i32s for larger sets
+
+struct BloomFilter {
+    bits: i32
+    size: i32
+}
+
+fn hash1(value: i32) i32 {
+    var hashed: i32 = (value * 7) % 32;
+    if (hashed < 0) {
+        hashed = 0 - hashed;
+    };
+    return hashed;
+}
+
+fn hash2(value: i32) i32 {
+    var hashed: i32 = (value * 13) % 32;
+    if (hashed < 0) {
+        hashed = 0 - hashed;
+    };
+    return hashed;
+}
+
+fn hash3(value: i32) i32 {
+    var hashed: i32 = (value * 19) % 32;
+    if (hashed < 0) {
+        hashed = 0 - hashed;
+    };
+    return hashed;
+}
+
+fn create_bloom() BloomFilter {
+    var bf: BloomFilter = BloomFilter { bits: 0, size: 32 };
+    return bf;
+}
+
+fn set_bit(bits: i32, pos: i32) i32 {
+    // Simulate setting a bit at position pos
+    if (pos >= 0 && pos < 32) {
+        var mask: i32 = 1;
+        var i: i32 = 0;
+        for i in 0, pos {
+            mask = mask * 2;
+        };
+        var result: i32 = bits + mask;
+        return result;
+    } else {
+        return bits;
+    };
+}
+
+fn get_bit(bits: i32, pos: i32) i32 {
+    // Simulate getting a bit at position pos
+    if (pos >= 0 && pos < 32) {
+        var mask: i32 = 1;
+        var i: i32 = 0;
+        for i in 0, pos {
+            mask = mask * 2;
+        };
+        var masked: i32 = bits % (mask * 2);
+        if (masked >= mask) {
+            return 1;
+        } else {
+            return 0;
+        };
+    } else {
+        return 0;
+    };
+}
+
+fn bloom_add(filter: BloomFilter, value: i32) BloomFilter {
+    var h1: i32 = hash1(value);
+    var h2: i32 = hash2(value);
+    var h3: i32 = hash3(value);
+    
+    var new_bits: i32 = filter.bits;
+    new_bits = set_bit(new_bits, h1);
+    new_bits = set_bit(new_bits, h2);
+    new_bits = set_bit(new_bits, h3);
+    
+    var result: BloomFilter = BloomFilter { bits: new_bits, size: filter.size };
+    return result;
+}
+
+fn bloom_contains(filter: BloomFilter, value: i32) i32 {
+    var h1: i32 = hash1(value);
+    var h2: i32 = hash2(value);
+    var h3: i32 = hash3(value);
+    
+    var bit1: i32 = get_bit(filter.bits, h1);
+    var bit2: i32 = get_bit(filter.bits, h2);
+    var bit3: i32 = get_bit(filter.bits, h3);
+    
+    if (bit1 == 1 && bit2 == 1 && bit3 == 1) {
+        return 1;
+    } else {
+        return 0;
+    };
+}
+
+actor Main {
+    fn main() {
+        print("Bloom Filter Test");
+        
+        // Create a bloom filter
+        var bf: BloomFilter = create_bloom();
+        
+        // Add some values
+        bf = bloom_add(bf, 10);
+        bf = bloom_add(bf, 20);
+        bf = bloom_add(bf, 30);
+        
+        // Test contains - should all be present
+        var contains_10: i32 = bloom_contains(bf, 10);
+        var contains_20: i32 = bloom_contains(bf, 20);
+        var contains_30: i32 = bloom_contains(bf, 30);
+        
+        print("Contains 10: ");
+        print(contains_10);
+        
+        print("Contains 20: ");
+        print(contains_20);
+        
+        print("Contains 30: ");
+        print(contains_30);
+        
+        // Test non-existent value (may have false positive)
+        var contains_99: i32 = bloom_contains(bf, 99);
+        print("Contains 99 (false positive possible): ");
+        print(contains_99);
+        
+        // Add more values and test again
+        bf = bloom_add(bf, 40);
+        bf = bloom_add(bf, 50);
+        
+        var contains_40: i32 = bloom_contains(bf, 40);
+        var contains_50: i32 = bloom_contains(bf, 50);
+        
+        print("Contains 40: ");
+        print(contains_40);
+        
+        print("Contains 50: ");
+        print(contains_50);
+    }
+
+    on start() {
+        main();
+    }
+}

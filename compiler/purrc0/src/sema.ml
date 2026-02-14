@@ -3,9 +3,17 @@ type symbol = { name: string; ty: Ast.ty; span: Span.t }
 (* M4: Function signature for type checking *)
 type func_sig = { params: Ast.ty list; return_ty: Ast.ty; span: Span.t }
 
+(* M7: Struct definition tracking *)
+type struct_def = { name: string; fields: (string * Ast.ty) list; span: Span.t }
+
+(* M8: Enum definition tracking *)
+type enum_def = { name: string; variants: string list; span: Span.t }
+
 type context = {
   symbols: symbol list;
   functions: (string, func_sig) Hashtbl.t;  (* M4: Track function signatures *)
+  structs: (string, struct_def) Hashtbl.t;  (* M7: Track struct definitions *)
+  enums: (string, enum_def) Hashtbl.t;  (* M8: Track enum definitions *)
 }
 
 let inferExprType (expr: Ast.expr) : Ast.ty option =
@@ -45,6 +53,12 @@ let inferExprType (expr: Ast.expr) : Ast.ty option =
             | _ -> None))
   | Ast.Call _ ->
       None  (* Cannot infer call return type without context *)
+  | Ast.StructLit { struct_name; _ } ->
+      Some (Ast.Struct struct_name)  (* M7: Struct literal has struct type *)
+  | Ast.FieldAccess _ ->
+      None  (* Cannot infer field type without context *)
+  | Ast.EnumVariant { enum_name; _ } ->
+      Some (Ast.Enum enum_name)  (* M8: Enum variant has enum type *)
 
 let rec checkExprType (expr: Ast.expr) (expected_ty: Ast.ty) (ctx: context) : (unit, Error.t) result =
   match expr with
@@ -62,14 +76,27 @@ let rec checkExprType (expr: Ast.expr) (expected_ty: Ast.ty) (ctx: context) : (u
        | Ast.String -> Ok ()
        | _ -> Error (Error.fromSpan span "Expected string but got string literal"))
   | Ast.Ident (name, span) ->
-      (match List.find_opt (fun (s: symbol) -> s.name = name) ctx.symbols with
-       | None -> Error (Error.fromSpan span (Printf.sprintf "Undefined variable: %s" name))
-       | Some sym ->
-           if sym.ty = expected_ty then Ok ()
-           else Error (Error.fromSpan span 
-             (Printf.sprintf "Type mismatch: expected %s but got %s"
-               (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool")
-               (match sym.ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool"))))
+      (* M8: Check if name is an enum variant *)
+      (match expected_ty with
+       | Ast.Enum enum_name ->
+           (* Look up enum definition *)
+           (match Hashtbl.find_opt ctx.enums enum_name with
+            | None -> Error (Error.fromSpan span (Printf.sprintf "Unknown enum: %s" enum_name))
+            | Some enum_def ->
+                if List.mem name enum_def.variants then
+                  Ok ()  (* This identifier is an enum variant *)
+                else
+                  Error (Error.fromSpan span (Printf.sprintf "Enum %s has no variant %s" enum_name name)))
+       | _ ->
+           (* Normal variable check *)
+           (match List.find_opt (fun (s: symbol) -> s.name = name) ctx.symbols with
+            | None -> Error (Error.fromSpan span (Printf.sprintf "Undefined variable: %s" name))
+            | Some sym ->
+                if sym.ty = expected_ty then Ok ()
+                else Error (Error.fromSpan span 
+                  (Printf.sprintf "Type mismatch: expected %s but got %s"
+                    (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e)
+                    (match sym.ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e)))))
   | Ast.BinOp { left; op; right; span } ->
       (* Type check the binary operation *)
       (match op with
@@ -154,9 +181,67 @@ let rec checkExprType (expr: Ast.expr) (expected_ty: Ast.ty) (ctx: context) : (u
                   else
                     Error (Error.fromSpan span 
                       (Printf.sprintf "Function returns %s but expected %s"
-                        (match sig_info.return_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool")
-                        (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool")))))
-
+                        (match sig_info.return_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s)
+                        (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s)))))
+  | Ast.StructLit { struct_name; fields; span } ->
+      (* M7: Check struct literal matches expected type *)
+      (match expected_ty with
+       | Ast.Struct expected_struct when expected_struct = struct_name ->
+           (* Look up struct definition *)
+           (match Hashtbl.find_opt ctx.structs struct_name with
+            | None -> Error (Error.fromSpan span (Printf.sprintf "Unknown struct: %s" struct_name))
+            | Some struct_def ->
+                (* Check all fields are provided *)
+                let provided_fields = List.map fst fields in
+                let expected_fields = List.map fst struct_def.fields in
+                if List.sort String.compare provided_fields <> List.sort String.compare expected_fields then
+                  Error (Error.fromSpan span (Printf.sprintf "Struct %s field mismatch" struct_name))
+                else
+                  (* Check each field type *)
+                  (match List.fold_left (fun acc (field_name, field_expr) ->
+                    match acc with
+                    | Error e -> Error e
+                    | Ok () ->
+                        match List.find_opt (fun (n, _) -> n = field_name) struct_def.fields with
+                        | None -> Error (Error.fromSpan span (Printf.sprintf "Unknown field: %s" field_name))
+                        | Some (_, field_ty) -> checkExprType field_expr field_ty ctx
+                   ) (Ok ()) fields
+                   with
+                   | Error e -> Error e
+                   | Ok () -> Ok ()))
+       | Ast.Struct s -> Error (Error.fromSpan span (Printf.sprintf "Expected struct %s but got struct %s" s struct_name))
+       | _ -> Error (Error.fromSpan span (Printf.sprintf "Expected struct but got %s" 
+         (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e)))))
+  | Ast.FieldAccess { object_; field; span } ->
+      (* M7: Type of field access depends on struct type *)
+      (match inferExprType object_ with
+       | Some (Ast.Struct struct_name) ->
+           (* Look up struct definition *)
+           (match Hashtbl.find_opt ctx.structs struct_name with
+            | None -> Error (Error.fromSpan span (Printf.sprintf "Unknown struct: %s" struct_name))
+            | Some struct_def ->
+                (* Find field *)
+                (match List.find_opt (fun (n, _) -> n = field) struct_def.fields with
+                 | None -> Error (Error.fromSpan span (Printf.sprintf "Struct %s has no field %s" struct_name field))
+                 | Some (_, field_ty) ->
+                     if field_ty = expected_ty then Ok ()
+                     else Error (Error.fromSpan span (Printf.sprintf "Field %s has type mismatch" field))))
+       | Some _ -> Error (Error.fromSpan span "Field access requires struct type")
+       | None -> Error (Error.fromSpan span "Cannot infer struct type for field access"))  | Ast.EnumVariant { enum_name; variant_name; span } ->
+      (* M8: Check enum variant matches expected type *)
+      (match expected_ty with
+       | Ast.Enum expected_enum when expected_enum = enum_name ->
+           (* Look up enum definition *)
+           (match Hashtbl.find_opt ctx.enums enum_name with
+            | None -> Error (Error.fromSpan span (Printf.sprintf "Unknown enum: %s" enum_name))
+            | Some enum_def ->
+                if List.mem variant_name enum_def.variants then
+                  Ok ()
+                else
+                  Error (Error.fromSpan span (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name)))
+       | Ast.Enum e -> Error (Error.fromSpan span (Printf.sprintf "Expected enum %s but got enum %s" e enum_name))
+       | _ -> Error (Error.fromSpan span (Printf.sprintf "Expected enum but got %s" 
+         (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e))))
 
 let checkStmt (stmt: Ast.stmt) (ctx: context) : (context, Error.t) result =
   match stmt with
@@ -262,13 +347,46 @@ let rec checkStmtList (stmts: Ast.stmt list) (ctx: context) : (context, Error.t)
        | Error e -> Error e
        | Ok ctx' -> checkStmtList rest ctx')
 
-let checkHandler (handler: Ast.handler) (func_table: (string, func_sig) Hashtbl.t) : (unit, Error.t) result =
-  let init_ctx = { symbols = []; functions = func_table } in
+let checkHandler (handler: Ast.handler) (func_table: (string, func_sig) Hashtbl.t) (struct_table: (string, struct_def) Hashtbl.t) (enum_table: (string, enum_def) Hashtbl.t) : (unit, Error.t) result =
+  let init_ctx = { symbols = []; functions = func_table; structs = struct_table; enums = enum_table } in
   match checkStmtList handler.Ast.body init_ctx with
   | Error e -> Error e
   | Ok _ -> Ok ()
 
+(* M7+: Add predeclared built-in functions *)
+let add_predeclared_functions func_table =
+  Hashtbl.add func_table "char_at" { 
+    params = [Ast.String; Ast.I32]; 
+    return_ty = Ast.I32; 
+    span = Span.make "" 0 0 
+  };
+  Hashtbl.add func_table "abs_i64" { 
+    params = [Ast.I64]; 
+    return_ty = Ast.I64; 
+    span = Span.make "" 0 0 
+  }
+
 let checkProgram program =
+  (* M7: Build struct table *)
+  let struct_table = Hashtbl.create 16 in
+  List.iter (fun (sdef: Ast.struct_def) ->
+    Hashtbl.add struct_table sdef.name { 
+      name = sdef.name;
+      fields = List.map (fun (f: Ast.struct_field) -> (f.name, f.ty)) sdef.fields;
+      span = sdef.span;
+    }
+  ) program.Ast.structs;
+
+  (* M8: Build enum table *)
+  let enum_table = Hashtbl.create 16 in
+  List.iter (fun (edef: Ast.enum_def) ->
+    Hashtbl.add enum_table edef.name {
+      name = edef.name;
+      variants = List.map (fun (v: Ast.enum_variant) -> v.name) edef.variants;
+      span = edef.span;
+    }
+  ) program.Ast.enums;
+
   (* Check: exactly one Main actor *)
   let main_count = ref 0 in
   let seen_actors = Hashtbl.create 16 in
@@ -301,6 +419,8 @@ let checkProgram program =
   List.iter (fun (actor: Ast.actor_def) ->
     (* Build function signature table for this actor *)
     let func_table = Hashtbl.create 16 in
+    (* M7+: Add predeclared functions *)
+    add_predeclared_functions func_table;
     List.iter (fun (func: Ast.func_def) ->
       let param_types = List.map (fun (p: Ast.param) -> p.ty) func.params in
       Hashtbl.add func_table func.name { params = param_types; return_ty = func.return_ty; span = func.span }
@@ -311,13 +431,15 @@ let checkProgram program =
       let init_ctx = { 
         symbols = List.map (fun (p: Ast.param) -> { name = p.name; ty = p.ty; span = p.span }) func.params;
         functions = func_table;
+        structs = struct_table;  (* M7: Pass struct table *)
+        enums = enum_table;  (* M8: Pass enum table *)
       } in
       match checkStmtList func.body init_ctx with
       | Error e -> errors := e :: !errors
       | Ok _ -> ()
     ) actor.functions;
     List.iter (fun (handler: Ast.handler) ->
-      match checkHandler handler func_table with
+      match checkHandler handler func_table struct_table enum_table with  (* M8: Pass enum table *)
       | Ok () -> ()
       | Error e -> errors := e :: !errors
     ) actor.handlers

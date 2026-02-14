@@ -1,0 +1,46 @@
+// M7+: Test backfilled utility functions
+
+fn string_length(s: string) i32 {
+    var count: i32 = 0;
+    var idx: i32 = 0;
+    for idx in 0, 100 {
+        var ch: i32 = char_at(s, idx);
+        if (ch < 0) {
+            return count;
+        } else {
+            count = count + 1;
+        };
+    };
+    return count;
+}
+
+fn test_abs() i32 {
+    var neg: i64 = -42;
+    var result: i64 = abs_i64(neg);
+    var as_i32: i32 = (result);  // Explicit cast (simplified)
+    return as_i32;
+}
+
+actor Main {
+    fn main() {
+        print("Testing backfilled functions");
+        
+        // Test char_at
+        var len: i32 = string_length("hello");
+        print("String length: ");
+        print(len);
+        
+        var first_char: i32 = char_at("hello", 0);
+        print("First char code: ");
+        print(first_char);
+        
+        // Test abs_i64
+        var abs_result: i32 = test_abs();
+        print("abs(-42) = ");
+        print(abs_result);
+    }
+
+    on start() {
+        main();
+    }
+}

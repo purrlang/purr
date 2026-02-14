@@ -1,0 +1,36 @@
+// M6 Test 1: GCD + LCM - Euclidean algorithm with derived LCM
+
+fn gcd(a: i32, b: i32) i32 {
+    var x: i32 = a;
+    var y: i32 = b;
+    for x in 1, 100 {
+        if (y == 0) {
+            return x;
+        } else {
+            var temp: i32 = y;
+            y = x % y;
+            x = temp;
+        };
+    };
+    return x;
+}
+
+fn lcm(a: i32, b: i32) i32 {
+    var g: i32 = gcd(a, b);
+    var result: i32 = (a * b) / g;
+    return result;
+}
+
+actor Main {
+    fn main() {
+        print("Testing GCD and LCM");
+        var g1: i32 = gcd(48, 18);
+        print(g1);
+        var l1: i32 = lcm(12, 8);
+        print(l1);
+    }
+
+    on start() {
+        main();
+    }
+}

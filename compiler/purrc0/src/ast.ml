@@ -3,6 +3,8 @@ type ty =
   | I64
   | String
   | Bool
+  | Struct of string  (* M7: Struct type with struct name *)
+  | Enum of string  (* M8: Enum type with enum name *)
 
 (* M3: Operator types *)
 type binop =
@@ -21,9 +23,40 @@ type expr =
   | BinOp of { left: expr; op: binop; right: expr; span: Span.t }
   | UnOp of { op: unop; operand: expr; span: Span.t }
   | Call of { name: string; args: expr list; span: Span.t }
+  (* M7: Struct expressions *)
+  | StructLit of { struct_name: string; fields: (string * expr) list; span: Span.t }
+  | FieldAccess of { object_: expr; field: string; span: Span.t }
+  (* M8: Enum variant creation *)
+  | EnumVariant of { enum_name: string; variant_name: string; span: Span.t }
 
 type program = {
+  structs: struct_def list;  (* M7: Struct definitions *)
+  enums: enum_def list;  (* M8: Enum definitions *)
   actors: actor_def list;
+}
+
+and struct_def = {
+  name: string;
+  fields: struct_field list;
+  span: Span.t;
+}
+
+and struct_field = {
+  name: string;
+  ty: ty;
+  span: Span.t;
+}
+
+(* M8: Enum definition *)
+and enum_def = {
+  name: string;
+  variants: enum_variant list;
+  span: Span.t;
+}
+
+and enum_variant = {
+  name: string;
+  span: Span.t;
 }
 
 and actor_def = {
