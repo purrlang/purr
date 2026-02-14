@@ -17,8 +17,18 @@ let typeToC (ty: Ast.ty) : string =
   | Ast.I64 -> "int64_t"
   | Ast.String -> "const char*"
   | Ast.Bool -> "_Bool"
+  | Ast.Void -> "void"  (* M4: Void return type *)
   | Ast.Struct name -> Printf.sprintf "struct %s" name (* M7: Struct types *)
   | Ast.Enum name -> "int"  (* M8: Enum types represented as int *)
+  (* M9: Container types - simplified C representations *)
+  | Ast.Option _ -> "void*"  (* Option<T> as opaque pointer (would be union in full impl) *)
+  | Ast.Result _ -> "void*"  (* Result<T,E> as opaque pointer (would be struct with tag) *)
+  | Ast.List _ -> "void*"  (* list<T> as opaque pointer (would be dynamic array) *)
+  | Ast.Map _ -> "void*"  (* map<K,V> as opaque pointer (would be hash table) *)
+  | Ast.Fixed (elem_ty, size) ->
+      Printf.sprintf "%s[%d]" (typeToC elem_ty) size  (* fixed<T,N> as C array *)
+  | Ast.Slice _ -> "void*"  (* slice<T> as opaque pointer *)
+  | Ast.Nil -> "void"  (* Nil doesn't really have a C representation *)
 
 let valueToC (v: Ir.value) : string =
   match v with

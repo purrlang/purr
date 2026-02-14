@@ -51,14 +51,52 @@ let inferExprType (expr: Ast.expr) : Ast.ty option =
            (match inferExprType operand with
             | Some (Ast.I32 | Ast.I64 as t) -> Some t
             | _ -> None))
-  | Ast.Call _ ->
-      None  (* Cannot infer call return type without context *)
+  | Ast.Call { name; _ } ->
+      (* M9: Check for special constructor calls *)
+      (match name with
+       | "Some" -> None  (* Requires context to know Some<T> *)
+       | "None" -> None  (* Requires context to know option<T> *)
+       | "Ok" -> None  (* Requires context to know result<T, E> *)
+       | "Err" -> None  (* Requires context to know result<T, E> *)
+       | _ -> None)  (* Cannot infer call return type without function signatures *)
   | Ast.StructLit { struct_name; _ } ->
       Some (Ast.Struct struct_name)  (* M7: Struct literal has struct type *)
   | Ast.FieldAccess _ ->
       None  (* Cannot infer field type without context *)
   | Ast.EnumVariant { enum_name; _ } ->
       Some (Ast.Enum enum_name)  (* M8: Enum variant has enum type *)
+  (* M9: Container types *)
+  | Ast.NilLit _ ->
+      Some Ast.Nil  (* nil has type Nil *)
+  | Ast.SomeLit { value; _ } ->
+      (match inferExprType value with
+       | Some elem_ty -> Some (Ast.Option elem_ty)
+       | None -> None)
+  | Ast.NoneLit _ ->
+      None  (* None type depends on context *)
+  | Ast.OkLit { value; _ } ->
+      (match inferExprType value with
+       | Some ok_ty -> Some (Ast.Result (ok_ty, Ast.String))  (* Default error type is string *)
+       | None -> None)
+  | Ast.ErrLit { error; _ } ->
+      (match inferExprType error with
+       | Some err_ty -> Some (Ast.Result (Ast.I32, err_ty))  (* Default ok type is i32 *)
+       | None -> None)
+  | Ast.ListLit { elements; _ } ->
+      (match elements with
+       | [] -> None  (* Empty list type requires context *)
+       | first :: _ ->
+           (match inferExprType first with
+            | Some elem_ty -> Some (Ast.List elem_ty)
+            | None -> None))
+  | Ast.IndexAccess { object_; _ } ->
+      (match inferExprType object_ with
+       | Some (Ast.List elem_ty) -> Some elem_ty
+       | Some (Ast.Fixed (elem_ty, _)) -> Some elem_ty
+       | Some (Ast.Slice elem_ty) -> Some elem_ty
+       | Some (Ast.Map (_, val_ty)) -> Some val_ty
+       | Some (Ast.String) -> Some Ast.I32  (* String indexing returns i32 (code point) *)
+       | _ -> None)
 
 let rec checkExprType (expr: Ast.expr) (expected_ty: Ast.ty) (ctx: context) : (unit, Error.t) result =
   match expr with
