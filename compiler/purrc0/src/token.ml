@@ -2,6 +2,7 @@ type t =
   | Actor
   | On
   | Start
+  | State  (* M15: Actor state fields *)
   | Print
   | Var
   | True
@@ -83,6 +84,7 @@ let pp_kind fmt = function
   | Actor -> Format.fprintf fmt "actor"
   | On -> Format.fprintf fmt "on"
   | Start -> Format.fprintf fmt "start"
+  | State -> Format.fprintf fmt "state"
   | Print -> Format.fprintf fmt "print"
   | Var -> Format.fprintf fmt "var"
   | True -> Format.fprintf fmt "true"

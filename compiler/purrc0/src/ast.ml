@@ -96,12 +96,15 @@ and enum_variant = {
 
 and actor_def = {
   name: string;
+  state_fields: struct_field list;  (* M15: State fields *)
   functions: func_def list;
   handlers: handler list;
   span: Span.t;
 }
 
 and handler = {
+  message_type: string;  (* M15: Type of message this handler processes (e.g., "start", "Ping") *)
+  params: param list;  (* M15: Parameters from message fields *)
   body: stmt list;
   span: Span.t;
 }
