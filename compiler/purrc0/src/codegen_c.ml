@@ -26,9 +26,12 @@ let valueToC (v: Ir.value) : string =
   | Ir.BoolVal b -> if b then "1" else "0"
   | Ir.StringVal s -> Printf.sprintf "\"%s\"" (escapeString s)
   | Ir.VarRef name -> name
-  | Ir.StructVal (struct_name, _) -> 
-      (* M7: For struct values, we'd generate initializer - simplified for now *)
-      Printf.sprintf "{0}"  (* Placeholder struct initializer *)
+  | Ir.StructVal (struct_name, fields) ->
+      (* M7: Generate struct initializer with field values *)
+      let field_strs = List.map (fun (fname, fval) ->
+        Printf.sprintf ".%s = %s" fname (valueToC fval)
+      ) fields in
+      Printf.sprintf "{%s}" (String.concat ", " field_strs)
   | Ir.EnumVal (enum_name, variant_name) ->
       (* M8: Enum values represented as enum constants *)
       Printf.sprintf "%s_%s" enum_name variant_name
