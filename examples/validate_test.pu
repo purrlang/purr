@@ -1,0 +1,10 @@
+actor Main {
+  fn test_func(n: i32) -> i32 {
+    var x: i32 = (n % 3);
+    return x;
+  }
+
+  on start() {
+    print_string("Test");
+  }
+}
