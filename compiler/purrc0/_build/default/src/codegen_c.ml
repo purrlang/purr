@@ -20,14 +20,14 @@ let rec typeToC (ty: Ast.ty) : string =
   | Ast.Void -> "void"  (* M4: Void return type *)
   | Ast.Struct name -> Printf.sprintf "struct %s" name (* M7: Struct types *)
   | Ast.Enum name -> "int"  (* M8: Enum types represented as int *)
-  (* M9: Container types - simplified C representations *)
-  | Ast.Option _ -> "void*"  (* Option<T> as opaque pointer (would be union in full impl) *)
-  | Ast.Result _ -> "void*"  (* Result<T,E> as opaque pointer (would be struct with tag) *)
-  | Ast.List _ -> "void*"  (* list<T> as opaque pointer (would be dynamic array) *)
-  | Ast.Map _ -> "void*"  (* map<K,V> as opaque pointer (would be hash table) *)
+  (* M9: Container types - proper C runtime types *)
+  | Ast.Option _ -> "void*"  (* Option<T> as opaque pointer *)
+  | Ast.Result _ -> "void*"  (* Result<T,E> as opaque pointer *)
+  | Ast.List _ -> "PurrList*"  (* list<T> as pointer to PurrList *)
+  | Ast.Map _ -> "PurrMap*"  (* map<K,V> as pointer to PurrMap *)
   | Ast.Fixed (elem_ty, size) ->
       Printf.sprintf "%s[%d]" (typeToC elem_ty) size  (* fixed<T,N> as C array *)
-  | Ast.Slice _ -> "void*"  (* slice<T> as opaque pointer *)
+  | Ast.Slice _ -> "PurrSlice*"  (* slice<T> as pointer to PurrSlice *)
   | Ast.Nil -> "void"  (* Nil doesn't really have a C representation *)
 
 and valueToC (v: Ir.value) : string =

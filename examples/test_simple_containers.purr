@@ -1,0 +1,6 @@
+actor TestContainers {
+  fn test_basic() -> i64 {
+    var my_list: list<i64> = [];
+    return 0;
+  }
+}

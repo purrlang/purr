@@ -1,0 +1,12 @@
+struct Point {
+  x: i64,
+  y: i64
+}
+
+actor TestContainers {
+  var state: i64 = 0;
+
+  on initialize() {
+    self.state = 42;
+  }
+}

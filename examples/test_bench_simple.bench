@@ -1,0 +1,1 @@
+bench "test" iterations 1 { setup { var x: i64 = 0; } run { x = 1; } }

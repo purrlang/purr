@@ -815,19 +815,22 @@ let parse_bench_decl st =
                  (match parseStmtList st [] with
                   | Error e -> Error e
                   | Ok setup_body ->
-                      (* Parse run block *)
-                      let run_tok = current st in
-                      (match run_tok.Token.kind with
-                       | Token.Run ->
-                           let _ = advance st in
-                           let _ = expect st Token.LBrace in
-                           (match parseStmtList st [] with
-                            | Error e -> Error e
-                            | Ok run_body ->
-                                let _ = expect st Token.RBrace in
-                                Ok ({ name; iterations; setup_body; run_body; span = tok.span } : Ast.bench_def))
-                       | _ ->
-                           Error (Error.fromSpan run_tok.span "Expected 'run' block in bench")))
+                      (match expect st Token.RBrace with
+                       | Error e -> Error e
+                       | Ok () ->
+                           let run_tok = current st in
+                           (match run_tok.Token.kind with
+                            | Token.Run ->
+                                let _ = advance st in
+                                let _ = expect st Token.LBrace in
+                                (match parseStmtList st [] with
+                                 | Error e -> Error e
+                                 | Ok run_body ->
+                                     let _ = expect st Token.RBrace in
+                                     let _ = expect st Token.RBrace in
+                                     Ok ({ name; iterations; setup_body; run_body; span = tok.span } : Ast.bench_def))
+                            | _ ->
+                                Error (Error.fromSpan run_tok.span "Expected 'run' block in bench"))))
              | _ ->
                  Error (Error.fromSpan setup_tok.span "Expected 'setup' block in bench"))))
 

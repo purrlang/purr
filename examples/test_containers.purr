@@ -1,0 +1,56 @@
+// M9 Container Types Test
+// Tests list<T>, map<K,V>, fixed<T,N>, slice<T>
+
+actor TestContainers {
+  fn test_list_basic() -> i64 {
+    // Create a list
+    let my_list: list<i64> = [];
+
+    // Operations would be: push, pop, get, set, length
+    // Currently we test that the type system accepts container literals
+
+    return 42;
+  }
+
+  fn test_fixed_array() -> i64 {
+    // Create a fixed array
+    let arr: fixed<i64, 5> = [1, 2, 3, 4, 5];
+
+    // Fixed arrays are stack-allocated in C
+    return 5;
+  }
+
+  fn test_map_basic() -> i64 {
+    // Create a map
+    let mapping: map<i64, i64> = {};
+
+    // Operations would be: insert, get, remove, count
+    // Currently we test that the type system accepts empty map
+
+    return 0;
+  }
+
+  fn test_option_type() -> i64 {
+    // Option types for nullable values
+    let maybe_val: option<i64> = none;
+
+    return 0;
+  }
+
+  fn test_result_type() -> i64 {
+    // Result types for error handling
+    let computation_result: result<i64, i64> = ok 42;
+
+    return 42;
+  }
+
+  fn main() -> i64 {
+    self.test_list_basic();
+    self.test_fixed_array();
+    self.test_map_basic();
+    self.test_option_type();
+    self.test_result_type();
+
+    return 0;
+  }
+}
