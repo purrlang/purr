@@ -26,6 +26,8 @@ type instr =
 type func = {
   id: func_id;
   name: string;
+  params: (string * Ast.ty) list;  (* M4: Function parameters *)
+  return_ty: Ast.ty;  (* M4: Return type *)
   body: instr list;
   var_types: (string, Ast.ty) Hashtbl.t;  (* Track variable types for codegen *)
 }
@@ -238,7 +240,7 @@ let lower program =
                    let v = exprToValue expr in
                    body_instrs := !body_instrs @ [Return (Some v)])
         | Ast.If { condition; then_body; else_body; _ } ->
-            (* M5: If/else lowering - simplified *)
+            (* M5: If/else lowering *)
             let (cond_instrs, cond_val, tc') = generateExprInstructions condition var_types temp_counter program.Ast.enums in
             temp_counter := !tc';
             let else_label = Printf.sprintf "__else_%d" !temp_counter in
@@ -246,12 +248,152 @@ let lower program =
             let end_label = Printf.sprintf "__end_if_%d" !temp_counter in
             incr temp_counter;
             body_instrs := !body_instrs @ cond_instrs @ [JumpIfFalse { condition = cond_val; label = else_label }];
-            (* Process then body - placeholder *)
-            body_instrs := !body_instrs @ [Jump end_label; Label else_label];
-            (* Process else body - placeholder *)
+            (* Process then body *)
+            let then_instrs = ref [] in
+            List.iter (fun (stmt: Ast.stmt) ->
+              match stmt with
+              | Ast.Print { value; _ } ->
+                  let needs_temp = match value with
+                     | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                     | _ -> false
+                  in
+                  if needs_temp then
+                    let (exprs_instrs, final_val, tc'') = generateExprInstructions value var_types temp_counter program.Ast.enums in
+                    temp_counter := !tc'';
+                    then_instrs := !then_instrs @ exprs_instrs @ [CallPrint final_val]
+                  else
+                    let v = exprToValue value in
+                    then_instrs := !then_instrs @ [CallPrint v]
+              | Ast.VarDecl { name; ty; init; _ } ->
+                  let resolved_ty = match ty with
+                    | Some t -> t
+                    | None ->
+                        match Sema.inferExprType init with
+                        | Some t -> t
+                        | None -> failwith (Printf.sprintf "Cannot infer type for %s" name)
+                  in
+                  Hashtbl.add var_types name resolved_ty;
+                  let needs_temp = match init with
+                     | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                     | _ -> false
+                  in
+                  if needs_temp then
+                    let (exprs_instrs, init_val, tc'') = generateExprInstructions init var_types temp_counter program.Ast.enums in
+                    temp_counter := !tc'';
+                    then_instrs := !then_instrs @ [DeclareVar { name; ty = resolved_ty }] @ exprs_instrs @ [Assign { name; value = init_val }]
+                  else
+                    let v = exprToValue init in
+                    then_instrs := !then_instrs @ [
+                      DeclareVar { name; ty = resolved_ty };
+                      Assign { name; value = v };
+                    ]
+              | Ast.Assign { name; value; _ } ->
+                  let needs_temp = match value with
+                     | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                     | _ -> false
+                  in
+                  if needs_temp then
+                    let (exprs_instrs, final_val, tc'') = generateExprInstructions value var_types temp_counter program.Ast.enums in
+                    temp_counter := !tc'';
+                    then_instrs := !then_instrs @ exprs_instrs @ [Assign { name; value = final_val }]
+                  else
+                    let v = exprToValue value in
+                    then_instrs := !then_instrs @ [Assign { name; value = v }]
+              | Ast.Return { value; _ } ->
+                  (match value with
+                   | None ->
+                       then_instrs := !then_instrs @ [Return None]
+                   | Some expr ->
+                       let needs_temp = match expr with
+                          | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                          | _ -> false
+                       in
+                       if needs_temp then
+                         let (exprs_instrs, ret_val, tc'') = generateExprInstructions expr var_types temp_counter program.Ast.enums in
+                         temp_counter := !tc'';
+                         then_instrs := !then_instrs @ exprs_instrs @ [Return (Some ret_val)]
+                       else
+                         let v = exprToValue expr in
+                         then_instrs := !then_instrs @ [Return (Some v)])
+              | _ -> ()  (* Other statements not yet handled in if body *)
+            ) then_body;
+            body_instrs := !body_instrs @ !then_instrs @ [Jump end_label; Label else_label];
+            (* Process else body *)
+            (match else_body with
+             | Some else_stmts ->
+                 let else_instrs = ref [] in
+                 List.iter (fun (stmt: Ast.stmt) ->
+                   match stmt with
+                   | Ast.Print { value; _ } ->
+                       let needs_temp = match value with
+                          | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                          | _ -> false
+                       in
+                       if needs_temp then
+                         let (exprs_instrs, final_val, tc'') = generateExprInstructions value var_types temp_counter program.Ast.enums in
+                         temp_counter := !tc'';
+                         else_instrs := !else_instrs @ exprs_instrs @ [CallPrint final_val]
+                       else
+                         let v = exprToValue value in
+                         else_instrs := !else_instrs @ [CallPrint v]
+                   | Ast.VarDecl { name; ty; init; _ } ->
+                       let resolved_ty = match ty with
+                         | Some t -> t
+                         | None ->
+                             match Sema.inferExprType init with
+                             | Some t -> t
+                             | None -> failwith (Printf.sprintf "Cannot infer type for %s" name)
+                       in
+                       Hashtbl.add var_types name resolved_ty;
+                       let needs_temp = match init with
+                          | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                          | _ -> false
+                       in
+                       if needs_temp then
+                         let (exprs_instrs, init_val, tc'') = generateExprInstructions init var_types temp_counter program.Ast.enums in
+                         temp_counter := !tc'';
+                         else_instrs := !else_instrs @ [DeclareVar { name; ty = resolved_ty }] @ exprs_instrs @ [Assign { name; value = init_val }]
+                       else
+                         let v = exprToValue init in
+                         else_instrs := !else_instrs @ [
+                           DeclareVar { name; ty = resolved_ty };
+                           Assign { name; value = v };
+                         ]
+                   | Ast.Assign { name; value; _ } ->
+                       let needs_temp = match value with
+                          | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                          | _ -> false
+                       in
+                       if needs_temp then
+                         let (exprs_instrs, final_val, tc'') = generateExprInstructions value var_types temp_counter program.Ast.enums in
+                         temp_counter := !tc'';
+                         else_instrs := !else_instrs @ exprs_instrs @ [Assign { name; value = final_val }]
+                       else
+                         let v = exprToValue value in
+                         else_instrs := !else_instrs @ [Assign { name; value = v }]
+                   | Ast.Return { value; _ } ->
+                       (match value with
+                        | None ->
+                            else_instrs := !else_instrs @ [Return None]
+                        | Some expr ->
+                            let needs_temp = match expr with
+                               | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                               | _ -> false
+                            in
+                            if needs_temp then
+                              let (exprs_instrs, ret_val, tc'') = generateExprInstructions expr var_types temp_counter program.Ast.enums in
+                              temp_counter := !tc'';
+                              else_instrs := !else_instrs @ exprs_instrs @ [Return (Some ret_val)]
+                            else
+                              let v = exprToValue expr in
+                              else_instrs := !else_instrs @ [Return (Some v)])
+                   | _ -> ()  (* Other statements not yet handled in else body *)
+                 ) else_stmts;
+                 body_instrs := !body_instrs @ !else_instrs
+             | None -> ());
             body_instrs := !body_instrs @ [Label end_label]
         | Ast.For { var; start_; end_; body; _ } ->
-            (* M5: For loop lowering - simplified *)
+            (* M5: For loop lowering *)
             let resolved_ty = match Sema.inferExprType start_ with
               | Some t -> t
               | None -> failwith "Cannot infer loop variable type"
@@ -265,18 +407,81 @@ let lower program =
             incr temp_counter;
             let end_label = Printf.sprintf "__end_loop_%d" !temp_counter in
             incr temp_counter;
+            let inc_temp = Printf.sprintf "__inc_%d" !temp_counter in
+            incr temp_counter;
             body_instrs := !body_instrs @ [DeclareVar { name = var; ty = resolved_ty }] @ start_instrs @ [Assign { name = var; value = start_val }] @ [Label loop_label];
-            (* Loop body - placeholder *)
+            (* Process loop body *)
+            let loop_body_instrs = ref [] in
+            List.iter (fun (stmt: Ast.stmt) ->
+              match stmt with
+              | Ast.Print { value; _ } ->
+                  let needs_temp = match value with
+                     | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                     | _ -> false
+                  in
+                  if needs_temp then
+                    let (exprs_instrs, final_val, tc''') = generateExprInstructions value var_types temp_counter program.Ast.enums in
+                    temp_counter := !tc''';
+                    loop_body_instrs := !loop_body_instrs @ exprs_instrs @ [CallPrint final_val]
+                  else
+                    let v = exprToValue value in
+                    loop_body_instrs := !loop_body_instrs @ [CallPrint v]
+              | Ast.VarDecl { name; ty; init; _ } ->
+                  let resolved_ty' = match ty with
+                    | Some t -> t
+                    | None ->
+                        match Sema.inferExprType init with
+                        | Some t -> t
+                        | None -> failwith (Printf.sprintf "Cannot infer type for %s" name)
+                  in
+                  Hashtbl.add var_types name resolved_ty';
+                  let needs_temp = match init with
+                     | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                     | _ -> false
+                  in
+                  if needs_temp then
+                    let (exprs_instrs, init_val, tc''') = generateExprInstructions init var_types temp_counter program.Ast.enums in
+                    temp_counter := !tc''';
+                    loop_body_instrs := !loop_body_instrs @ [DeclareVar { name; ty = resolved_ty' }] @ exprs_instrs @ [Assign { name; value = init_val }]
+                  else
+                    let v = exprToValue init in
+                    loop_body_instrs := !loop_body_instrs @ [
+                      DeclareVar { name; ty = resolved_ty' };
+                      Assign { name; value = v };
+                    ]
+              | Ast.Assign { name; value; _ } ->
+                  let needs_temp = match value with
+                     | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+                     | _ -> false
+                  in
+                  if needs_temp then
+                    let (exprs_instrs, final_val, tc''') = generateExprInstructions value var_types temp_counter program.Ast.enums in
+                    temp_counter := !tc''';
+                    loop_body_instrs := !loop_body_instrs @ exprs_instrs @ [Assign { name; value = final_val }]
+                  else
+                    let v = exprToValue value in
+                    loop_body_instrs := !loop_body_instrs @ [Assign { name; value = v }]
+              | _ -> ()  (* Other statements not yet handled in loop body *)
+            ) body;
+            (* Generate loop condition check and increment *)
             let cond_temp = Printf.sprintf "__cond_%d" !temp_counter in
             incr temp_counter;
-            body_instrs := !body_instrs @ end_instrs @ [BinOp {
+            body_instrs := !body_instrs @ !loop_body_instrs @ end_instrs @ [BinOp {
               result = cond_temp;
-              op = Ast.Lte;
+              op = Ast.Lt;
               left = VarRef var;
               right = end_val;
               result_ty = Ast.Bool
             };
             JumpIfFalse { condition = VarRef cond_temp; label = end_label };
+            BinOp {
+              result = inc_temp;
+              op = Ast.Add;
+              left = VarRef var;
+              right = IntVal 1L;
+              result_ty = resolved_ty
+            };
+            Assign { name = var; value = VarRef inc_temp };
             Jump loop_label;
             Label end_label]
         | Ast.Test { name; body; _ } ->
@@ -287,6 +492,8 @@ let lower program =
       let func_ir = {
         id = func_id;
         name = func_id;
+        params = List.map (fun (p: Ast.param) -> (p.name, p.ty)) func.params;  (* M4: Extract parameters *)
+        return_ty = func.return_ty;  (* M4: Extract return type *)
         body = !body_instrs;
         var_types = var_types;
       } in
@@ -373,6 +580,8 @@ let lower program =
       let func = {
         id = func_id;
         name = func_id;
+        params = [];  (* M5: Handlers have no parameters *)
+        return_ty = Ast.I32;  (* M5: Handlers return i32 (or void) *)
         body = body;
         var_types = var_types;
       } in

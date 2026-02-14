@@ -83,9 +83,31 @@ let generateC ir =
   ) ir.enums;
   
   
-  (* Generate functions *)
+  (* Generate function forward declarations *)
   List.iter (fun (func: Ir.func) ->
-    Buffer.add_string buf (Printf.sprintf "void %s(void) {\n" func.name);
+    let return_type = typeToC func.return_ty in
+    let params_str = match func.params with
+      | [] -> "void"
+      | params ->
+          String.concat ", " (List.map (fun (name, ty) ->
+            Printf.sprintf "%s %s" (typeToC ty) name
+          ) params)
+    in
+    Buffer.add_string buf (Printf.sprintf "%s %s(%s);\n" return_type func.name params_str)
+  ) ir.Ir.functions;
+  Buffer.add_string buf "\n";
+
+  (* Generate function implementations *)
+  List.iter (fun (func: Ir.func) ->
+    let return_type = typeToC func.return_ty in
+    let params_str = match func.params with
+      | [] -> "void"
+      | params ->
+          String.concat ", " (List.map (fun (name, ty) ->
+            Printf.sprintf "%s %s" (typeToC ty) name
+          ) params)
+    in
+    Buffer.add_string buf (Printf.sprintf "%s %s(%s) {\n" return_type func.name params_str);
     
     (* First pass: collect and emit variable declarations *)
     List.iter (fun instr ->
