@@ -212,7 +212,7 @@
   - **Bootstrap Simplification**: All list elements stored as int64_t via void* casting; maps use string keys only
 
 ### M10.5: Benchmarking Infrastructure (Implemented)
-- **Status**: Fully Implemented (parser, IR lowering, codegen)
+- **Status**: Fully Implemented (parser, IR lowering, codegen, runtime instrumentation)
 - **Components Covered**:
   - **Parser**: `bench "name" iterations N { setup {...} run {...} }` syntax
     - Optional setup block, required run block
@@ -224,13 +224,34 @@
   - **Codegen**: Emits benchmark functions and `run_benches()` runner
     - Benchmark functions generated automatically as IR functions
     - Forward declarations for all benchmarks
-    - `run_benches()` function calls all benchmarks in order
+    - `run_benches()` function with CLOCK_MONOTONIC timing
+    - Machine-readable output format: BENCH name=... iterations=... alloc_count=... bytes_allocated=... ns=... ns_per_iter=...
+  - **Runtime Instrumentation**:
+    - PurrInstrCounters struct with alloc_count, bytes_allocated, message_count, scheduler_steps
+    - purr_malloc() and purr_realloc() wrappers for tracking allocations
+    - get_instr_counters() and reset_instr_counters() API
+    - All list, map, slice, fixed allocations tracked automatically
   - **Example**: `examples/bench_list_operations.pu` with list/map benchmarks
 - **Pending Components**:
-  - Runtime instrumentation counters (alloc_count, message_count, scheduler_steps)
   - `--bench` CLI mode to run benchmarks and report results
-  - Machine-readable output format
+  - message_count and scheduler_steps (require actor system)
   - Integration with deterministic scheduler
+
+### M11: FFI (Foreign Function Interface) (Implemented)
+- **Status**: Fully Implemented (parser, sema, codegen)
+- **Components Covered**:
+  - **Syntax**: `extern fn name(param: type) returntype`
+  - **Parser**: Parse extern declarations without function bodies
+  - **Semantic Analysis**: Validate extern function signatures and parameter names
+  - **Codegen**: Generate C extern declarations with proper type mapping
+  - **Type Mapping**: bool→_Bool, i32→int32_t, i64→int64_t, string→const char*, void→void
+  - **Example**: `examples/ffi_test.pu` demonstrating C stdlib function calls
+- **Spec Compliance**: Full §4.10 and §9.5 (type mapping) compliance
+- **Features**:
+  - Declare C function signatures without implementation
+  - Full type checking for extern function calls
+  - Automatic C type conversion on codegen
+  - No callbacks (not supported per spec)
 
 ### M10: Actors & Concurrency (Partially Implemented)
 - Actor definitions: `actor Name { ... }`
@@ -248,7 +269,7 @@
 - Run tests with: `python tools/build.py examples/hello.pu`
 
 **Code Structure**:
-- All modules updated for M1-M10.5
+- All modules updated for M1-M11
 - M1-M5: Complete implementation (lexer, parser, semantic analysis, IR, codegen)
 - M6: GATE 1A programs implemented (5 scalar validation programs)
 - M7-M8.5: Complete with structs, enums, and switch statements
@@ -261,6 +282,12 @@
 - M9 GATE 1B: 5 ADT validation programs implemented (using camelCase functions)
 - M10.5 Bench Infrastructure: Fully implemented
   - Bench declarations with optional setup and required run blocks
+  - Runtime instrumentation counters (alloc_count, bytes_allocated)
+  - Machine-readable benchmark output format with timing
+- M11 FFI: Fully implemented
+  - extern fn declarations with C type mapping
+  - Semantic validation of extern function signatures
+  - C codegen with extern declarations
   - IR lowering to benchmark functions with proper iteration loops
   - Codegen support with run_benches() runner
   - Example benchmark program demonstrating usage
