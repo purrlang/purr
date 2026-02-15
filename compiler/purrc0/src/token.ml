@@ -42,6 +42,7 @@ type t =
   | Fn
   | Return
   | Arrow
+  | Extern  (* M11: FFI - extern C functions *)
   (* M5: Control flow *)
   | If
   | Else
@@ -124,6 +125,7 @@ let pp_kind fmt = function
   | Fn -> Format.fprintf fmt "fn"
   | Return -> Format.fprintf fmt "return"
   | Arrow -> Format.fprintf fmt "->"
+  | Extern -> Format.fprintf fmt "extern"
   (* M5: Control flow tokens *)
   | If -> Format.fprintf fmt "if"
   | Else -> Format.fprintf fmt "else"

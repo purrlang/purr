@@ -54,6 +54,7 @@ type program = {
   enums: enum_def list;  (* M8: Enum definitions *)
   messages: message_def list;  (* M14: Message definitions *)
   benches: bench_def list;  (* M10.5: Benchmark definitions *)
+  extern_funcs: extern_def list;  (* M11: Extern C function declarations *)
   actors: actor_def list;
   toplevel_funcs: func_def list;  (* M4: Top-level function declarations *)
   toplevel_tests: test_def list;  (* M5: Top-level test declarations *)
@@ -187,5 +188,13 @@ and func_def = {
   params: param list;
   return_ty: ty;
   body: stmt list;
+  span: Span.t;
+}
+
+(* M11: Extern C function declarations *)
+and extern_def = {
+  name: string;
+  params: param list;
+  return_ty: ty;
   span: Span.t;
 }

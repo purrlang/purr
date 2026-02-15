@@ -276,6 +276,7 @@ let tokenize file source =
           | "string" -> Token.Type "string"
           | "bool" -> Token.Type "bool"
           | "fn" -> Token.Fn
+          | "extern" -> Token.Extern
           | "return" -> Token.Return
           | "if" -> Token.If
           | "else" -> Token.Else

@@ -1047,6 +1047,56 @@ let parse_enum st =
       Error (Error.fromSpan tok.span "Expected 'enum'")
 
 (* M10.5: Parse bench declaration *)
+(* M11: Parse extern C function declarations *)
+let parse_extern_fn st =
+  let tok = current st in
+  let _ = expect st Token.Extern in
+  let _ = expect st Token.Fn in
+  (match expectIdent st with
+   | Error e -> Error e
+   | Ok (name, _) ->
+       let _ = expect st Token.LParen in
+       (* Parse parameters *)
+       let rec parse_params acc =
+         let param_tok = current st in
+         (match param_tok.Token.kind with
+          | Token.RParen ->
+              ignore (advance st);
+              Ok (List.rev acc)
+          | Token.Comma ->
+              ignore (advance st);
+              (match parse_param st with
+               | Error e -> Error e
+               | Ok param -> parse_params (param :: acc))
+          | _ when acc = [] ->
+              (match parse_param st with
+               | Error e -> Error e
+               | Ok param -> parse_params [param])
+          | _ ->
+              Error (Error.fromSpan param_tok.span "Expected ',' or ')' in parameter list"))
+       in
+       (match parse_params [] with
+        | Error e -> Error e
+        | Ok params ->
+            (* Return type: optional '->' followed by type; default Void *)
+            let ret_tok = current st in
+            let (return_ty, after_ty_ok) =
+              if ret_tok.Token.kind = Token.Arrow then begin
+                let _ = advance st in
+                match expectType st with
+                | Error _ -> (Ast.Void, false)
+                | Ok (ty, _) -> (ty, true)
+              end else
+                (* Try to parse a type directly (no '->' prefix) *)
+                match expectType st with
+                | Error _ -> (Ast.Void, true)  (* No return type => Void *)
+                | Ok (ty, _) -> (ty, true)
+            in
+            if not after_ty_ok then
+              Error (Error.fromSpan ret_tok.span "Expected return type")
+            else
+              Ok ({ name; params; return_ty; span = tok.span } : Ast.extern_def)))
+
 let parse_bench_decl st =
   let tok = current st in
   let _ = expect st Token.Bench in
@@ -1124,7 +1174,7 @@ let parse_top_test st =
              | _ ->
                  Error (Error.fromSpan rtok.span "Expected }"))));
 
-let rec parseStructEnumAndActors st structs enums messages benches actors toplevel_funcs toplevel_tests =
+let rec parseStructEnumAndActors st structs enums messages benches extern_funcs actors toplevel_funcs toplevel_tests =
   (* Skip optional newlines *)
   while current st |> fun t -> t.Token.kind = Token.Newline do
     ignore (advance st)
@@ -1135,42 +1185,48 @@ let rec parseStructEnumAndActors st structs enums messages benches actors toplev
   | Token.EOF ->
       Ok { Ast.structs = List.rev structs; enums = List.rev enums;
            messages = List.rev messages; benches = List.rev benches;
+           extern_funcs = List.rev extern_funcs;
            actors = List.rev actors;
            toplevel_funcs = List.rev toplevel_funcs;
            toplevel_tests = List.rev toplevel_tests }
   | Token.Struct ->
       (match parse_struct st with
        | Error e -> Error e
-       | Ok struct_def -> parseStructEnumAndActors st (struct_def :: structs) enums messages benches actors toplevel_funcs toplevel_tests)
+       | Ok struct_def -> parseStructEnumAndActors st (struct_def :: structs) enums messages benches extern_funcs actors toplevel_funcs toplevel_tests)
   | Token.Message ->
       (match parse_message st with
        | Error e -> Error e
-       | Ok message_def -> parseStructEnumAndActors st structs enums (message_def :: messages) benches actors toplevel_funcs toplevel_tests)
+       | Ok message_def -> parseStructEnumAndActors st structs enums (message_def :: messages) benches extern_funcs actors toplevel_funcs toplevel_tests)
   | Token.Enum ->
       (match parse_enum st with
        | Error e -> Error e
-       | Ok enum_def -> parseStructEnumAndActors st structs (enum_def :: enums) messages benches actors toplevel_funcs toplevel_tests)
+       | Ok enum_def -> parseStructEnumAndActors st structs (enum_def :: enums) messages benches extern_funcs actors toplevel_funcs toplevel_tests)
   | Token.Bench ->
       (match parse_bench_decl st with
        | Error e -> Error e
-       | Ok bench_def -> parseStructEnumAndActors st structs enums messages (bench_def :: benches) actors toplevel_funcs toplevel_tests)
+       | Ok bench_def -> parseStructEnumAndActors st structs enums messages (bench_def :: benches) extern_funcs actors toplevel_funcs toplevel_tests)
   | Token.Actor ->
       (match parse_actor st with
        | Error e -> Error e
-       | Ok actor -> parseStructEnumAndActors st structs enums messages benches (actor :: actors) toplevel_funcs toplevel_tests)
+       | Ok actor -> parseStructEnumAndActors st structs enums messages benches extern_funcs (actor :: actors) toplevel_funcs toplevel_tests)
   | Token.Fn ->
       (* M4: Top-level function declaration *)
       (match parse_func st with
        | Error e -> Error e
-       | Ok func -> parseStructEnumAndActors st structs enums messages benches actors (func :: toplevel_funcs) toplevel_tests)
+       | Ok func -> parseStructEnumAndActors st structs enums messages benches extern_funcs actors (func :: toplevel_funcs) toplevel_tests)
   | Token.Test ->
       (* M5: Top-level test declaration *)
       (match parse_top_test st with
        | Error e -> Error e
-       | Ok test_def -> parseStructEnumAndActors st structs enums messages benches actors toplevel_funcs (test_def :: toplevel_tests))
+       | Ok test_def -> parseStructEnumAndActors st structs enums messages benches extern_funcs actors toplevel_funcs (test_def :: toplevel_tests))
+  | Token.Extern ->
+      (* M11: Top-level extern C function declaration *)
+      (match parse_extern_fn st with
+       | Error e -> Error e
+       | Ok extern_def -> parseStructEnumAndActors st structs enums messages benches (extern_def :: extern_funcs) actors toplevel_funcs toplevel_tests)
   | _ ->
-      Error (Error.fromSpan tok.span "Expected 'struct', 'message', 'enum', 'bench', 'actor', 'fn', 'test', or EOF")
+      Error (Error.fromSpan tok.span "Expected 'struct', 'message', 'enum', 'bench', 'actor', 'extern', 'fn', 'test', or EOF")
 
 let parse tokens =
   let st = make tokens in
-  parseStructEnumAndActors st [] [] [] [] [] [] []
+  parseStructEnumAndActors st [] [] [] [] [] [] [] []  (* structs enums messages benches extern_funcs actors toplevel_funcs toplevel_tests *)

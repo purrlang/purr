@@ -37,6 +37,7 @@ type program_ir = {
   enums: Ast.enum_def list;  (* M8: Enum definitions *)
   messages: Ast.message_def list;  (* M14: Message definitions *)
   benches: Ast.bench_def list;  (* M10.5: Benchmark definitions *)
+  extern_funcs: Ast.extern_def list;  (* M11: Extern C function declarations *)
   entry: func_id;
   functions: func list;
   toplevel_tests: Ast.test_def list;  (* M5: Test declarations for codegen test runner *)
@@ -872,6 +873,7 @@ let lower program =
     enums = program.Ast.enums;  (* M8: Include enum definitions *)
     messages = program.Ast.messages;  (* M14: Include message definitions *)
     benches = program.Ast.benches;  (* M10.5: Include benchmark definitions *)
+    extern_funcs = program.Ast.extern_funcs;  (* M11: Include extern function declarations *)
     entry = entry;
     functions = List.rev !functions;
     toplevel_tests = program.Ast.toplevel_tests;  (* M5: Pass tests for codegen *)

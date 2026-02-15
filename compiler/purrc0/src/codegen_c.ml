@@ -108,6 +108,21 @@ let generateC ir =
     Buffer.add_string buf "};\n\n"
   ) ir.Ir.messages;
 
+  (* M11: Generate extern C function declarations *)
+  List.iter (fun (edef: Ast.extern_def) ->
+    let return_type = typeToC edef.return_ty in
+    let params_str = match edef.params with
+      | [] -> "void"
+      | params ->
+          String.concat ", " (List.map (fun (name, ty) ->
+            Printf.sprintf "%s %s" (typeToC ty) name
+          ) params)
+    in
+    Buffer.add_string buf (Printf.sprintf "%s %s(%s);\n" return_type edef.name params_str)
+  ) ir.Ir.extern_funcs;
+  if ir.Ir.extern_funcs <> [] then
+    Buffer.add_string buf "\n";
+
   (* Generate function forward declarations *)
   List.iter (fun (func: Ir.func) ->
     let return_type = typeToC func.return_ty in

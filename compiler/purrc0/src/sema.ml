@@ -544,6 +544,25 @@ let checkProgram program =
         (Printf.sprintf "Message '%s' conflicts with enum of the same name" mdef.name) :: !errors
   ) program.Ast.messages;
 
+  (* M11: Validate extern C function declarations *)
+  let extern_func_names = Hashtbl.create 16 in
+  List.iter (fun (edef: Ast.extern_def) ->
+    if Hashtbl.mem extern_func_names edef.name then
+      errors := Error.fromSpan edef.span
+        (Printf.sprintf "Duplicate extern function name: %s" edef.name) :: !errors
+    else
+      Hashtbl.add extern_func_names edef.name ();
+    (* Validate parameter names are unique *)
+    let param_names = Hashtbl.create 16 in
+    List.iter (fun (param: Ast.param) ->
+      if Hashtbl.mem param_names param.name then
+        errors := Error.fromSpan edef.span
+          (Printf.sprintf "Duplicate parameter name '%s' in extern function %s" param.name edef.name) :: !errors
+      else
+        Hashtbl.add param_names param.name ()
+    ) edef.params
+  ) program.Ast.extern_funcs;
+
   (* M10.5: Validate benchmark declarations *)
   let bench_names = Hashtbl.create 16 in
   List.iter (fun (bench: Ast.bench_def) ->
