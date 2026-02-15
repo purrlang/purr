@@ -211,18 +211,33 @@
     - Test assertions with formatted output
   - **Bootstrap Simplification**: All list elements stored as int64_t via void* casting; maps use string keys only
 
+### M10.5: Benchmarking Infrastructure (Implemented)
+- **Status**: Fully Implemented (parser, IR lowering, codegen)
+- **Components Covered**:
+  - **Parser**: `bench "name" iterations N { setup {...} run {...} }` syntax
+    - Optional setup block, required run block
+    - Supports both forms: with/without setup
+  - **IR**: Lowers benchmarks to `__bench__<name>` void functions
+    - Setup statements executed once
+    - Run statements executed N times in iteration loop
+    - Proper variable tracking and temporary management
+  - **Codegen**: Emits benchmark functions and `run_benches()` runner
+    - Benchmark functions generated automatically as IR functions
+    - Forward declarations for all benchmarks
+    - `run_benches()` function calls all benchmarks in order
+  - **Example**: `examples/bench_list_operations.pu` with list/map benchmarks
+- **Pending Components**:
+  - Runtime instrumentation counters (alloc_count, message_count, scheduler_steps)
+  - `--bench` CLI mode to run benchmarks and report results
+  - Machine-readable output format
+  - Integration with deterministic scheduler
+
 ### M10: Actors & Concurrency (Partially Implemented)
 - Actor definitions: `actor Name { ... }`
 - Message handlers: `handler receive(msg: T) { ... }`
 - Message sending: `send(actor_ref, message)`
 - Mailbox types
 - Concurrent execution model
-
-### M10.5: Benchmarking Infrastructure (Not Yet Implemented)
-- Bench declarations and syntax
-- Instrumentation counters (alloc_count, message_count, scheduler_steps, bytes_allocated)
-- --bench CLI mode
-- Performance metrics tracking
 
 ## Development Status
 
@@ -233,18 +248,24 @@
 - Run tests with: `python tools/build.py examples/hello.pu`
 
 **Code Structure**:
-- All modules updated for M1-M9
+- All modules updated for M1-M10.5
 - M1-M5: Complete implementation (lexer, parser, semantic analysis, IR, codegen)
 - M6: GATE 1A programs implemented (5 scalar validation programs)
 - M7-M8.5: Complete with structs, enums, and switch statements
 - M9: Fully implemented (types, parsing, semantic analysis, IR, codegen, runtime)
   - Generic type syntax with < and > tokens
   - Container expressions (nil, list literals, index access)
-  - Container built-in functions registered in semantic analysis
+  - Container built-in functions using camelCase naming (listNew, mapSet, etc.)
   - IR lowering for all container expressions
   - C runtime implementations (list, map, option, result helpers)
-- M9 GATE 1B: 5 ADT validation programs implemented
+- M9 GATE 1B: 5 ADT validation programs implemented (using camelCase functions)
+- M10.5 Bench Infrastructure: Fully implemented
+  - Bench declarations with optional setup and required run blocks
+  - IR lowering to benchmark functions with proper iteration loops
+  - Codegen support with run_benches() runner
+  - Example benchmark program demonstrating usage
 - Top-level fn/test declarations fully supported (previously missing)
+- All function names use camelCase (Purr language convention)
 - Changes follow OCaml idioms and type safety principles
 - Comprehensive error messages for type mismatches
 - Proper span tracking for all error reporting
@@ -374,7 +395,41 @@ The purr compiler is now feature-complete for M1-M8. The code compiles to valid 
 5. Focus on M14-M16 (deterministic actor scheduler) - highest risk
 6. Then M20-M24 (message broker implementation)
 
-## Session Summary: M8 Switch + M9 Full Implementation
+## Session Summary: M10.5 Bench Infrastructure + Function Naming Fixes
+
+### Accomplished in This Session (Continued):
+1. **Function Naming Convention Fix**: Changed all public function names from snake_case to camelCase
+   - Updated sema.ml to register functions with camelCase names
+   - Updated codegen_c.ml function name remapping
+   - Updated all GATE 1B programs to call camelCase functions
+   - Examples: `listNew()`, `mapSet()`, `expectEqI32()`, etc.
+
+2. **M10.5 Bench Infrastructure**: Complete implementation
+   - Parser: Made `setup` block optional in bench declarations
+   - IR: Lower benchmark statements to `__bench__<name>` void functions
+     - Setup block executes once before iterations
+     - Run block executes inside iteration loop (N times)
+     - Proper variable tracking and temp management
+   - Codegen: Emit benchmark functions and `run_benches()` runner
+     - Benchmarks are regular IR functions emitted automatically
+     - Forward declarations and runner function generated
+   - Example: `bench_list_operations.pu` with list/map benchmarks
+
+### Files Modified (This Continued Session):
+- `compiler/purrc0/src/sema.ml` - Registered camelCase function names
+- `compiler/purrc0/src/codegen_c.ml` - Updated remapping, added bench runner
+- `compiler/purrc0/src/parser.ml` - Made setup block optional
+- `compiler/purrc0/src/ir.ml` - Added benchmark lowering with iteration loops
+- All 5 GATE 1B programs - Updated to use camelCase functions
+- `examples/bench_list_operations.pu` - New benchmark example
+
+### Commits Made (This Session):
+- `4189b85` - Change function names from snake_case to camelCase
+- `caa71c7` - Implement M10.5 bench infrastructure
+- (Plus earlier: `63d384a` - Update IMPLEMENTATION_STATUS.md)
+- (Plus earlier: `0ceaa30` - Implement M8 switch, M9 containers, top-level fn/test, GATE 1B programs)
+
+## Previous Session Summary: M8 Switch + M9 Full Implementation
 
 ### Accomplished in This Session:
 1. **M8.5 Switch Statements**: Complete implementation
