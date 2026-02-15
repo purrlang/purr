@@ -217,20 +217,23 @@ let generateC ir =
     Buffer.add_string buf "}\n\n"
   ) ir.Ir.functions;
 
-  (* M10.5: Generate benchmark functions *)
-  List.iter (fun (bench: Ast.bench_def) ->
-    let func_name = Printf.sprintf "bench_%s" bench.name in
-    Buffer.add_string buf (Printf.sprintf "void %s(void) {\n" func_name);
-    Buffer.add_string buf (Printf.sprintf "    /* Benchmark: %s (iterations: %d) */\n" bench.name bench.iterations);
-
-    (* TODO: Generate setup_body statements *)
-    (* For now, we'll generate placeholder comments *)
-    Buffer.add_string buf (Printf.sprintf "    int64_t __iterations = %dLL;\n" bench.iterations);
-    Buffer.add_string buf "    for (int64_t __i = 0; __i < __iterations; __i++) {\n";
-    Buffer.add_string buf "        /* run_body code would go here */\n";
-    Buffer.add_string buf "    }\n";
+  (* M10.5: If benchmarks exist, generate forward declarations for benchmark functions *)
+  let has_benches = ir.Ir.benches <> [] in
+  if has_benches then begin
+    List.iter (fun (bdef: Ast.bench_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' bdef.Ast.name) in
+      let func_id = Printf.sprintf "__bench__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "void %s(void);\n" func_id)
+    ) ir.Ir.benches;
+    Buffer.add_string buf "\nvoid run_benches(void) {\n";
+    List.iter (fun (bdef: Ast.bench_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' bdef.Ast.name) in
+      let func_id = Printf.sprintf "__bench__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "    /* Benchmark: %s (iterations: %d) */\n" bdef.Ast.name bdef.Ast.iterations);
+      Buffer.add_string buf (Printf.sprintf "    %s();\n" func_id)
+    ) ir.Ir.benches;
     Buffer.add_string buf "}\n\n"
-  ) ir.Ir.benches;
+  end;
 
   (* M5: If tests exist, generate forward declarations and a run_tests() function *)
   let has_tests = ir.Ir.toplevel_tests <> [] in

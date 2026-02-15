@@ -805,6 +805,66 @@ let lower program =
     functions := func_ir :: !functions
   ) program.Ast.toplevel_tests;
 
+  (* M10.5: Lower benchmark functions *)
+  List.iter (fun (bdef: Ast.bench_def) ->
+    let safe_name = String.concat "_" (String.split_on_char ' ' bdef.Ast.name) in
+    let func_id = Printf.sprintf "__bench__%s" safe_name in
+    let body_instrs = ref [] in
+    let var_types = Hashtbl.create 16 in
+    let temp_counter = ref 0 in
+    (* Lower setup statements *)
+    lower_stmts_to bdef.Ast.setup_body var_types temp_counter program.Ast.enums body_instrs;
+    (* Add iteration loop for run statements *)
+    let iter_var = "__bench_iter" in
+    Hashtbl.add var_types iter_var Ast.I64;
+    body_instrs := !body_instrs @ [DeclareVar { name = iter_var; ty = Ast.I64 }];
+    body_instrs := !body_instrs @ [Assign { name = iter_var; value = IntVal 0L }];
+    let loop_start_label = Printf.sprintf "__bench_loop_start_%d" !temp_counter in
+    let loop_end_label = Printf.sprintf "__bench_loop_end_%d" !temp_counter in
+    incr temp_counter;
+    body_instrs := !body_instrs @ [Label loop_start_label];
+    (* Check if iter >= iterations: if so, jump to end *)
+    let cond_result = Printf.sprintf "__bench_cond_%d" !temp_counter in
+    incr temp_counter;
+    Hashtbl.add var_types cond_result Ast.Bool;
+    body_instrs := !body_instrs @ [DeclareVar { name = cond_result; ty = Ast.Bool }];
+    body_instrs := !body_instrs @ [BinOp {
+      result = cond_result;
+      op = Ast.Gte;
+      left = VarRef iter_var;
+      right = IntVal (Int64.of_int bdef.Ast.iterations);
+      result_ty = Ast.Bool;
+    }];
+    body_instrs := !body_instrs @ [JumpIfFalse { condition = VarRef cond_result; label = loop_end_label }];
+    (* Lower run statements *)
+    lower_stmts_to bdef.Ast.run_body var_types temp_counter program.Ast.enums body_instrs;
+    (* Increment iterator: iter = iter + 1 *)
+    let next_iter = Printf.sprintf "__bench_next_iter_%d" !temp_counter in
+    incr temp_counter;
+    Hashtbl.add var_types next_iter Ast.I64;
+    body_instrs := !body_instrs @ [DeclareVar { name = next_iter; ty = Ast.I64 }];
+    body_instrs := !body_instrs @ [BinOp {
+      result = next_iter;
+      op = Ast.Add;
+      left = VarRef iter_var;
+      right = IntVal 1L;
+      result_ty = Ast.I64;
+    }];
+    body_instrs := !body_instrs @ [Assign { name = iter_var; value = VarRef next_iter }];
+    body_instrs := !body_instrs @ [Jump loop_start_label];
+    body_instrs := !body_instrs @ [Label loop_end_label];
+    body_instrs := !body_instrs @ [Return None];
+    let func_ir = {
+      id = func_id;
+      name = func_id;
+      params = [];
+      return_ty = Ast.Void;
+      body = !body_instrs;
+      var_types = var_types;
+    } in
+    functions := func_ir :: !functions
+  ) program.Ast.benches;
+
   (* Entry point is Main.on_start *)
   let entry = "Main_on_start" in
   {

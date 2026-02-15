@@ -1059,10 +1059,11 @@ let parse_bench_decl st =
         | Ok (iterations_lit, _) ->
             let iterations = Int64.to_int iterations_lit in
             let _ = expect st Token.LBrace in
-            (* Parse setup block *)
-            let setup_tok = current st in
-            (match setup_tok.Token.kind with
+            (* Parse optional setup block *)
+            let first_tok = current st in
+            (match first_tok.Token.kind with
              | Token.Setup ->
+                 (* setup block present *)
                  let _ = advance st in
                  let _ = expect st Token.LBrace in
                  (match parseStmtList st [] with
@@ -1084,8 +1085,18 @@ let parse_bench_decl st =
                                      Ok ({ name; iterations; setup_body; run_body; span = tok.span } : Ast.bench_def))
                             | _ ->
                                 Error (Error.fromSpan run_tok.span "Expected 'run' block in bench"))))
+             | Token.Run ->
+                 (* No setup, only run block *)
+                 let _ = advance st in
+                 let _ = expect st Token.LBrace in
+                 (match parseStmtList st [] with
+                  | Error e -> Error e
+                  | Ok run_body ->
+                      let _ = expect st Token.RBrace in
+                      let _ = expect st Token.RBrace in
+                      Ok ({ name; iterations; setup_body = []; run_body; span = tok.span } : Ast.bench_def))
              | _ ->
-                 Error (Error.fromSpan setup_tok.span "Expected 'setup' block in bench"))))
+                 Error (Error.fromSpan first_tok.span "Expected 'setup' or 'run' block in bench"))))
 
 let parse_top_test st =
   let tok = current st in
