@@ -253,6 +253,36 @@
   - Automatic C type conversion on codegen
   - No callbacks (not supported per spec)
 
+### M12: Namespaces (Parser & IR Support Complete)
+- **Status**: Parser & IR complete; Semantic validation pending
+- **Components Implemented**:
+  - **Lexer**: Recognize namespace and use keywords
+  - **Parser**:
+    - Parse namespace declarations: `namespace <name.hierarchy>`
+    - Parse use declarations: `use <namespace>` or `use <namespace> = <alias>`
+    - Dot-separated namespace names (e.g., `example.math`)
+    - Optional alias in use declarations (defaults to final segment)
+    - Namespace must be first non-comment token
+    - Use declarations precede other declarations
+  - **AST**:
+    - namespace_name field in program
+    - uses list with use_decl type
+    - Maintains declaration order
+  - **IR & Codegen**:
+    - Pass namespace info through IR
+    - Emit namespace/uses as C comments for documentation
+  - **Examples**:
+    - namespace_main.pu - demonstrates use declarations
+    - namespace_math.pu - math module
+    - namespace_utils.pu - utility functions
+- **Pending Components**:
+  - Semantic validation (namespace must exist, first token check)
+  - Symbol table with namespace qualification
+  - Enforced qualified name resolution (no unqualified access to imports)
+  - Alias collision detection
+  - Cyclic dependency detection
+  - Multi-file compilation support
+
 ### M10: Actors & Concurrency (Partially Implemented)
 - Actor definitions: `actor Name { ... }`
 - Message handlers: `handler receive(msg: T) { ... }`
@@ -269,7 +299,7 @@
 - Run tests with: `python tools/build.py examples/hello.pu`
 
 **Code Structure**:
-- All modules updated for M1-M11
+- All modules updated for M1-M12
 - M1-M5: Complete implementation (lexer, parser, semantic analysis, IR, codegen)
 - M6: GATE 1A programs implemented (5 scalar validation programs)
 - M7-M8.5: Complete with structs, enums, and switch statements
@@ -288,9 +318,11 @@
   - extern fn declarations with C type mapping
   - Semantic validation of extern function signatures
   - C codegen with extern declarations
-  - IR lowering to benchmark functions with proper iteration loops
-  - Codegen support with run_benches() runner
-  - Example benchmark program demonstrating usage
+- M12 Namespaces: Parser & IR support complete
+  - Namespace declarations (namespace <name.hierarchy>)
+  - Use declarations with optional aliases
+  - Example multi-module programs
+  - Semantic validation pending (name resolution, collisions, cyclic deps)
 - Top-level fn/test declarations fully supported (previously missing)
 - All function names use camelCase (Purr language convention)
 - Changes follow OCaml idioms and type safety principles
