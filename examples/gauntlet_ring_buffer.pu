@@ -1,77 +1,97 @@
 // M6 Test 5: Ring Buffer - circular buffer using array of fixed indices
 
-fn ring_buffer_capacity() i32 {
-    return 10;
+fn ring_buffer_capacity() -> i32 {
+    return 10
 }
 
-fn ring_insert(write_pos: i32, value: i32) i32 {
-    // Simulate storing value at write_pos (normally in array)
-    // Return next write position with wrap-around
-    var next_pos: i32 = write_pos + 1;
-    var capacity: i32 = ring_buffer_capacity();
-    
+fn ring_insert(write_pos: i32, value: i32) -> i32 {
+    var next_pos: i32 = (write_pos + 1)
+    var capacity: i32 = ring_buffer_capacity()
+
     if (next_pos >= capacity) {
-        return 0;
+        return 0
     } else {
-        return next_pos;
-    };
+        return next_pos
+    }
 }
 
-fn ring_read(read_pos: i32) i32 {
-    // Simulate reading value from read_pos (based on position)
-    // Return simulated stored value
+fn ring_read(read_pos: i32) -> i32 {
     if (read_pos == 0) {
-        return 10;
+        return 10
     } else {
         if (read_pos == 1) {
-            return 20;
+            return 20
         } else {
             if (read_pos == 2) {
-                return 30;
+                return 30
             } else {
-                return 0;
-            };
-        };
-    };
+                return 0
+            }
+        }
+    }
 }
 
-fn ring_advance_read(read_pos: i32) i32 {
-    var next_pos: i32 = read_pos + 1;
-    var capacity: i32 = ring_buffer_capacity();
-    
+fn ring_advance_read(read_pos: i32) -> i32 {
+    var next_pos: i32 = (read_pos + 1)
+    var capacity: i32 = ring_buffer_capacity()
+
     if (next_pos >= capacity) {
-        return 0;
+        return 0
     } else {
-        return next_pos;
-    };
+        return next_pos
+    }
 }
 
 actor Main {
-    fn main() {
-        print("Ring buffer test");
-        
-        var write_pos: i32 = 0;
-        var read_pos: i32 = 0;
-        
-        // Insert 3 values
-        write_pos = ring_insert(write_pos, 10);
-        write_pos = ring_insert(write_pos, 20);
-        write_pos = ring_insert(write_pos, 30);
-        
-        // Read 3 values
-        var val1: i32 = ring_read(read_pos);
-        print(val1);
-        read_pos = ring_advance_read(read_pos);
-        
-        var val2: i32 = ring_read(read_pos);
-        print(val2);
-        read_pos = ring_advance_read(read_pos);
-        
-        var val3: i32 = ring_read(read_pos);
-        print(val3);
-    }
-
     on start() {
-        main();
+        print_string("Ring Buffer Test")
+    }
+}
+
+test "ring_buffer_insert_1" {
+    var write_pos: i32 = 0
+    var write_pos2: i32 = ring_insert(write_pos, 10)
+    if (write_pos2 == 1) {
+        print_string("PASS: ring_insert(0, 10) = 1")
+    } else {
+        print_string("FAIL: ring_insert(0, 10)")
+    }
+}
+
+test "ring_buffer_insert_wraparound" {
+    var write_pos: i32 = 9
+    var write_pos2: i32 = ring_insert(write_pos, 99)
+    if (write_pos2 == 0) {
+        print_string("PASS: ring_insert(9, 99) = 0 (wraparound)")
+    } else {
+        print_string("FAIL: ring_insert(9, 99)")
+    }
+}
+
+test "ring_buffer_read_first" {
+    var value: i32 = ring_read(0)
+    if (value == 10) {
+        print_string("PASS: ring_read(0) = 10")
+    } else {
+        print_string("FAIL: ring_read(0)")
+    }
+}
+
+test "ring_buffer_read_second" {
+    var value: i32 = ring_read(1)
+    if (value == 20) {
+        print_string("PASS: ring_read(1) = 20")
+    } else {
+        print_string("FAIL: ring_read(1)")
+    }
+}
+
+test "ring_buffer_advance_read" {
+    var read_pos: i32 = 2
+    var read_pos2: i32 = ring_advance_read(read_pos)
+    if (read_pos2 == 3) {
+        print_string("PASS: ring_advance_read(2) = 3")
+    } else {
+        print_string("FAIL: ring_advance_read(2)")
     }
 }

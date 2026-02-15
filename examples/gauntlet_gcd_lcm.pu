@@ -1,36 +1,76 @@
 // M6 Test 1: GCD + LCM - Euclidean algorithm with derived LCM
 
-fn gcd(a: i32, b: i32) i32 {
-    var x: i32 = a;
-    var y: i32 = b;
-    for x in 1, 100 {
+fn gcd(a: i32, b: i32) -> i32 {
+    var x: i32 = a
+    var y: i32 = b
+    var iteration: i32 = 0
+
+    for iteration in 0, 100 {
         if (y == 0) {
-            return x;
+            return x
         } else {
-            var temp: i32 = y;
-            y = x % y;
-            x = temp;
-        };
-    };
-    return x;
+            var temp: i32 = y
+            y = (x % y)
+            x = temp
+        }
+    }
+
+    return x
 }
 
-fn lcm(a: i32, b: i32) i32 {
-    var g: i32 = gcd(a, b);
-    var result: i32 = (a * b) / g;
-    return result;
+fn lcm(a: i32, b: i32) -> i32 {
+    var g: i32 = gcd(a, b)
+    var result: i32 = ((a * b) / g)
+    return result
 }
 
 actor Main {
-    fn main() {
-        print("Testing GCD and LCM");
-        var g1: i32 = gcd(48, 18);
-        print(g1);
-        var l1: i32 = lcm(12, 8);
-        print(l1);
-    }
-
     on start() {
-        main();
+        print_string("GCD and LCM Test")
+    }
+}
+
+test "gcd_48_18" {
+    var result: i32 = gcd(48, 18)
+    if (result == 6) {
+        print_string("PASS: gcd(48, 18) = 6")
+    } else {
+        print_string("FAIL: gcd(48, 18)")
+    }
+}
+
+test "gcd_12_8" {
+    var result: i32 = gcd(12, 8)
+    if (result == 4) {
+        print_string("PASS: gcd(12, 8) = 4")
+    } else {
+        print_string("FAIL: gcd(12, 8)")
+    }
+}
+
+test "lcm_12_8" {
+    var result: i32 = lcm(12, 8)
+    if (result == 24) {
+        print_string("PASS: lcm(12, 8) = 24")
+    } else {
+        print_string("FAIL: lcm(12, 8)")
+    }
+}
+
+test "lcm_6_9" {
+    var result: i32 = lcm(6, 9)
+    if (result == 18) {
+        print_string("PASS: lcm(6, 9) = 18")
+    } else {
+        print_string("FAIL: lcm(6, 9)")
+    }
+}
+
+test "gcd_identity" {
+    var result: i32 = gcd(42, 42)
+    if (result == 42) {
+        print_string("PASS: gcd(42, 42) = 42")
+    } else {
+        print_string("FAIL: gcd(42, 42)")
     }
 }

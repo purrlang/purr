@@ -1,46 +1,75 @@
 // M6 Test 2: Rate Limiter - token bucket with counter checks
 
-fn has_capacity(available: i32, required: i32) i32 {
+fn has_capacity(available: i32, required: i32) -> i32 {
     if (available >= required) {
-        return 1;
+        return 1
     } else {
-        return 0;
-    };
+        return 0
+    }
 }
 
-fn consume_tokens(available: i32, amount: i32) i32 {
-    var result: i32 = available - amount;
-    return result;
+fn consume_tokens(available: i32, amount: i32) -> i32 {
+    var result: i32 = (available - amount)
+    return result
 }
 
-fn refill_tokens(available: i32, refill: i32) i32 {
-    var max_tokens: i32 = 100;
-    var new_available: i32 = available + refill;
+fn refill_tokens(available: i32, refill: i32) -> i32 {
+    var max_tokens: i32 = 100
+    var new_available: i32 = (available + refill)
     if (new_available > max_tokens) {
-        return max_tokens;
+        return max_tokens
     } else {
-        return new_available;
-    };
+        return new_available
+    }
 }
 
 actor Main {
-    fn main() {
-        print("Testing rate limiter");
-        var tokens: i32 = 50;
-        var request_size: i32 = 20;
-        
-        if (has_capacity(tokens, request_size) == 1) {
-            tokens = consume_tokens(tokens, request_size);
-            print("Request accepted");
-        } else {
-            print("Request rejected");
-        };
-        
-        tokens = refill_tokens(tokens, 30);
-        print(tokens);
-    }
-
     on start() {
-        main();
+        print_string("Rate Limiter Test")
+    }
+}
+
+test "rate_limiter_has_capacity_true" {
+    var result: i32 = has_capacity(50, 20)
+    if (result == 1) {
+        print_string("PASS: has_capacity(50, 20) = 1")
+    } else {
+        print_string("FAIL: has_capacity(50, 20)")
+    }
+}
+
+test "rate_limiter_has_capacity_false" {
+    var result: i32 = has_capacity(10, 20)
+    if (result == 0) {
+        print_string("PASS: has_capacity(10, 20) = 0")
+    } else {
+        print_string("FAIL: has_capacity(10, 20)")
+    }
+}
+
+test "rate_limiter_consume" {
+    var result: i32 = consume_tokens(50, 20)
+    if (result == 30) {
+        print_string("PASS: consume_tokens(50, 20) = 30")
+    } else {
+        print_string("FAIL: consume_tokens(50, 20)")
+    }
+}
+
+test "rate_limiter_refill_under_max" {
+    var result: i32 = refill_tokens(50, 30)
+    if (result == 80) {
+        print_string("PASS: refill_tokens(50, 30) = 80")
+    } else {
+        print_string("FAIL: refill_tokens(50, 30)")
+    }
+}
+
+test "rate_limiter_refill_over_max" {
+    var result: i32 = refill_tokens(80, 50)
+    if (result == 100) {
+        print_string("PASS: refill_tokens(80, 50) = 100")
+    } else {
+        print_string("FAIL: refill_tokens(80, 50)")
     }
 }

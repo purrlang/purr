@@ -1,0 +1,14 @@
+actor Main {
+  fn classify(n: i32) -> i32 {
+    var check: i32 = (n % 3);
+    if (check == 0) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  on start() {
+    print_string("Test");
+  }
+}

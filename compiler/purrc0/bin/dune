@@ -1,4 +1,4 @@
 (executable
- (name purrc0)
+ (name main)
  (modules main)
  (libraries purrc0_lib))
