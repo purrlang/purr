@@ -73,7 +73,11 @@ let generateC ir =
   (* Header *)
   Buffer.add_string buf "#include \"purr_runtime.h\"\n";
   Buffer.add_string buf "#include <stdint.h>\n";
-  Buffer.add_string buf "#include <stdbool.h>\n\n";
+  Buffer.add_string buf "#include <stdbool.h>\n";
+  Buffer.add_string buf "#include <stdio.h>\n";
+  if ir.Ir.benches <> [] then
+    Buffer.add_string buf "#include <time.h>\n";
+  Buffer.add_string buf "\n";
   
   (* M7: Generate struct definitions *)
   List.iter (fun (sdef: Ast.struct_def) ->
@@ -226,11 +230,29 @@ let generateC ir =
       Buffer.add_string buf (Printf.sprintf "void %s(void);\n" func_id)
     ) ir.Ir.benches;
     Buffer.add_string buf "\nvoid run_benches(void) {\n";
+    Buffer.add_string buf "    struct timespec start, end;\n";
+    Buffer.add_string buf "    long long ns_elapsed = 0;\n";
+    Buffer.add_string buf "    PurrInstrCounters before, after;\n\n";
     List.iter (fun (bdef: Ast.bench_def) ->
       let safe_name = String.concat "_" (String.split_on_char ' ' bdef.Ast.name) in
       let func_id = Printf.sprintf "__bench__%s" safe_name in
-      Buffer.add_string buf (Printf.sprintf "    /* Benchmark: %s (iterations: %d) */\n" bdef.Ast.name bdef.Ast.iterations);
-      Buffer.add_string buf (Printf.sprintf "    %s();\n" func_id)
+      Buffer.add_string buf (Printf.sprintf "    /* Run benchmark: %s */\n" bdef.Ast.name);
+      Buffer.add_string buf "    reset_instr_counters();\n";
+      Buffer.add_string buf "    before = get_instr_counters();\n";
+      Buffer.add_string buf "    clock_gettime(CLOCK_MONOTONIC, &start);\n";
+      Buffer.add_string buf (Printf.sprintf "    for (int __i = 0; __i < %d; __i++) {\n" bdef.Ast.iterations);
+      Buffer.add_string buf (Printf.sprintf "        %s();\n" func_id);
+      Buffer.add_string buf "    }\n";
+      Buffer.add_string buf "    clock_gettime(CLOCK_MONOTONIC, &end);\n";
+      Buffer.add_string buf "    after = get_instr_counters();\n";
+      Buffer.add_string buf "    ns_elapsed = ((long long)end.tv_sec * 1000000000LL + end.tv_nsec) -\n";
+      Buffer.add_string buf "                 ((long long)start.tv_sec * 1000000000LL + start.tv_nsec);\n";
+      Buffer.add_string buf (Printf.sprintf "    printf(\"BENCH name=\\\"%s\\\" iterations=%d alloc_count=%%lld bytes_allocated=%%lld ns=%%lld ns_per_iter=%%lld\\\\n\",\n"
+        bdef.Ast.name bdef.Ast.iterations);
+      Buffer.add_string buf "           (long long)after.alloc_count,\n";
+      Buffer.add_string buf "           (long long)after.bytes_allocated,\n";
+      Buffer.add_string buf "           ns_elapsed,\n";
+      Buffer.add_string buf (Printf.sprintf "           ns_elapsed / %d);\n\n" bdef.Ast.iterations)
     ) ir.Ir.benches;
     Buffer.add_string buf "}\n\n"
   end;

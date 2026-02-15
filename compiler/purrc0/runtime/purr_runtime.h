@@ -180,4 +180,23 @@ int64_t unwrap(int64_t opt);
 _Bool   is_ok(int64_t res);
 int64_t unwrap_ok(int64_t res);
 
+/* ============================================================================
+   M10.5: Instrumentation API for Benchmarking
+   Tracks allocations and performance metrics during benchmark runs.
+   ============================================================================ */
+
+/* Instrumentation counter structure */
+typedef struct {
+  int64_t alloc_count;      /* Number of allocations */
+  int64_t bytes_allocated;  /* Total bytes allocated */
+  int64_t message_count;    /* Number of messages dispatched (for actors) */
+  int64_t scheduler_steps;  /* Number of scheduler steps (for actors) */
+} PurrInstrCounters;
+
+/* Get current instrumentation counters */
+PurrInstrCounters get_instr_counters(void);
+
+/* Reset instrumentation counters */
+void reset_instr_counters(void);
+
 #endif /* PURR_RUNTIME_H */

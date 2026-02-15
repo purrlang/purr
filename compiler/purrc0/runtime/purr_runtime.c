@@ -30,10 +30,10 @@ int64_t abs_i64(int64_t n) { return n < 0 ? -n : n; }
 PurrList* purr_list_create(int64_t initial_capacity) {
   if (initial_capacity <= 0) initial_capacity = 10;
 
-  PurrList* list = (PurrList*)malloc(sizeof(PurrList));
+  PurrList* list = (PurrList*)purr_malloc(sizeof(PurrList));
   if (!list) return NULL;
 
-  list->data = (void**)malloc(sizeof(void*) * initial_capacity);
+  list->data = (void**)purr_malloc(sizeof(void*) * initial_capacity);
   if (!list->data) {
     free(list);
     return NULL;
@@ -52,7 +52,7 @@ void purr_list_free(PurrList* list) {
 
 static void purr_list_grow(PurrList* list) {
   int64_t new_capacity = list->capacity * 2;
-  void** new_data = (void**)realloc(list->data, sizeof(void*) * new_capacity);
+  void** new_data = (void**)purr_realloc(list->data, sizeof(void*) * new_capacity);
 
   if (!new_data) {
     /* Growth failed, but keep existing list intact */
@@ -103,7 +103,7 @@ void purr_list_clear(PurrList* list) {
    ============================================================================ */
 
 PurrFixed* purr_fixed_create(void* data, int64_t size) {
-  PurrFixed* fixed = (PurrFixed*)malloc(sizeof(PurrFixed));
+  PurrFixed* fixed = (PurrFixed*)purr_malloc(sizeof(PurrFixed));
   if (!fixed) return NULL;
 
   fixed->data = data;
@@ -142,7 +142,7 @@ int64_t purr_fixed_length(PurrFixed* fixed) {
    ============================================================================ */
 
 PurrSlice* purr_slice_create(void* data, int64_t start, int64_t length) {
-  PurrSlice* slice = (PurrSlice*)malloc(sizeof(PurrSlice));
+  PurrSlice* slice = (PurrSlice*)purr_malloc(sizeof(PurrSlice));
   if (!slice) return NULL;
 
   slice->data = data;
@@ -213,7 +213,8 @@ static void purr_map_resize(PurrMap* map,
 
   /* Double the capacity */
   map->capacity *= 2;
-  map->entries = (PurrMapEntry*)calloc(map->capacity, sizeof(PurrMapEntry));
+  map->entries = (PurrMapEntry*)purr_malloc(map->capacity * sizeof(PurrMapEntry));
+  if (map->entries) memset(map->entries, 0, map->capacity * sizeof(PurrMapEntry));
   if (!map->entries) {
     /* Resize failed, restore old state */
     map->capacity = old_capacity;
@@ -237,10 +238,10 @@ static void purr_map_resize(PurrMap* map,
 PurrMap* purr_map_create(int64_t initial_capacity) {
   if (initial_capacity <= 0) initial_capacity = 16;
 
-  PurrMap* map = (PurrMap*)malloc(sizeof(PurrMap));
+  PurrMap* map = (PurrMap*)purr_malloc(sizeof(PurrMap));
   if (!map) return NULL;
 
-  map->entries = (PurrMapEntry*)calloc(initial_capacity, sizeof(PurrMapEntry));
+  map->entries = (PurrMapEntry*)purr_malloc(initial_capacity * sizeof(PurrMapEntry));
   if (!map->entries) {
     free(map);
     return NULL;
@@ -413,3 +414,48 @@ int64_t unwrap(int64_t opt) { return opt; }  /* caller ensures non-nil */
 
 _Bool   is_ok(int64_t res)     { return res != PURR_ERR_SENTINEL; }
 int64_t unwrap_ok(int64_t res) { return res; }
+
+/* ============================================================================
+   M10.5: Instrumentation Counters for Benchmarking
+   ============================================================================ */
+
+/* Global instrumentation counters */
+static PurrInstrCounters __instr_counters = {
+  .alloc_count = 0,
+  .bytes_allocated = 0,
+  .message_count = 0,
+  .scheduler_steps = 0
+};
+
+/* Instrumented malloc wrapper */
+void* purr_malloc(size_t size) {
+  void* ptr = malloc(size);
+  if (ptr) {
+    __instr_counters.alloc_count++;
+    __instr_counters.bytes_allocated += (int64_t)size;
+  }
+  return ptr;
+}
+
+/* Instrumented realloc wrapper */
+void* purr_realloc(void* ptr, size_t size) {
+  void* new_ptr = realloc(ptr, size);
+  if (new_ptr) {
+    __instr_counters.alloc_count++;
+    __instr_counters.bytes_allocated += (int64_t)size;
+  }
+  return new_ptr;
+}
+
+/* Get current instrumentation counters */
+PurrInstrCounters get_instr_counters(void) {
+  return __instr_counters;
+}
+
+/* Reset instrumentation counters */
+void reset_instr_counters(void) {
+  __instr_counters.alloc_count = 0;
+  __instr_counters.bytes_allocated = 0;
+  __instr_counters.message_count = 0;
+  __instr_counters.scheduler_steps = 0;
+}
