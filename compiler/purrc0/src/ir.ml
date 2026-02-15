@@ -33,6 +33,8 @@ type func = {
 }
 
 type program_ir = {
+  namespace_name: string;  (* M12: Namespace name *)
+  uses: Ast.use_decl list;  (* M12: Use declarations *)
   structs: Ast.struct_def list;  (* M7: Struct definitions *)
   enums: Ast.enum_def list;  (* M8: Enum definitions *)
   messages: Ast.message_def list;  (* M14: Message definitions *)
@@ -869,6 +871,8 @@ let lower program =
   (* Entry point is Main.on_start *)
   let entry = "Main_on_start" in
   {
+    namespace_name = program.Ast.namespace_name;  (* M12: Include namespace name *)
+    uses = program.Ast.uses;  (* M12: Include use declarations *)
     structs = program.Ast.structs;  (* M7: Include struct definitions *)
     enums = program.Ast.enums;  (* M8: Include enum definitions *)
     messages = program.Ast.messages;  (* M14: Include message definitions *)

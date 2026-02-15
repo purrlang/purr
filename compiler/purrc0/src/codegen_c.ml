@@ -69,7 +69,18 @@ let unopToC (op: Ast.unop) : string =
 
 let generateC ir =
   let buf = Buffer.create 1024 in
-  
+
+  (* M12: Add namespace information as comments *)
+  Buffer.add_string buf (Printf.sprintf "/* Namespace: %s */\n" ir.Ir.namespace_name);
+  if ir.Ir.uses <> [] then begin
+    Buffer.add_string buf "/* Uses: ";
+    List.iter (fun (use_decl: Ast.use_decl) ->
+      Buffer.add_string buf (Printf.sprintf "%s = %s, " use_decl.alias use_decl.namespace)
+    ) ir.Ir.uses;
+    Buffer.add_string buf "*/\n"
+  end;
+  Buffer.add_string buf "\n";
+
   (* Header *)
   Buffer.add_string buf "#include \"purr_runtime.h\"\n";
   Buffer.add_string buf "#include <stdint.h>\n";

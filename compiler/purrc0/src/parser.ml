@@ -1227,6 +1227,77 @@ let rec parseStructEnumAndActors st structs enums messages benches extern_funcs 
   | _ ->
       Error (Error.fromSpan tok.span "Expected 'struct', 'message', 'enum', 'bench', 'actor', 'extern', 'fn', 'test', or EOF")
 
+(* M12: Parse namespace name (dot-separated identifiers) *)
+let parse_namespace_name st =
+  let rec loop acc =
+    match expectIdent st with
+    | Error e -> Error e
+    | Ok (ident, _) ->
+        let acc' = ident :: acc in
+        let tok = current st in
+        if tok.Token.kind = Token.Dot then
+          let _ = advance st in
+          loop acc'
+        else
+          Ok (String.concat "." (List.rev acc'))
+  in
+  loop []
+
+(* M12: Parse use declaration *)
+let parse_use_decl st =
+  let tok = current st in
+  let _ = expect st Token.Use in
+  (match parse_namespace_name st with
+   | Error e -> Error e
+   | Ok namespace ->
+       (* Check for optional alias *)
+       let tok_eq = current st in
+       let alias =
+         if tok_eq.Token.kind = Token.Equals then begin
+           let _ = advance st in
+           match expectIdent st with
+           | Error e -> failwith (Error.show e)
+           | Ok (alias, _) -> alias
+         end else
+           (* Default alias is final segment *)
+           match String.split_on_char '.' namespace |> List.rev with
+           | [] -> failwith "Empty namespace"
+           | final :: _ -> final
+       in
+       let _ = expect st Token.Newline in
+       Ok { Ast.namespace; alias; span = tok.span })
+
+(* M12: Parse use declarations until we see something else *)
+let parse_use_declarations st uses =
+  let rec loop acc =
+    let tok = current st in
+    (* Skip newlines *)
+    while current st |> fun t -> t.Token.kind = Token.Newline do
+      ignore (advance st)
+    done;
+    match (current st).Token.kind with
+    | Token.Use ->
+        (match parse_use_decl st with
+         | Error e -> Error e
+         | Ok use_decl -> loop (use_decl :: acc))
+    | _ -> Ok (List.rev acc)
+  in
+  loop uses
+
 let parse tokens =
   let st = make tokens in
-  parseStructEnumAndActors st [] [] [] [] [] [] [] []  (* structs enums messages benches extern_funcs actors toplevel_funcs toplevel_tests *)
+  (* M12: Parse namespace declaration (must be first non-comment token) *)
+  let _ = expect st Token.Namespace in
+  (match parse_namespace_name st with
+   | Error e -> Error e
+   | Ok namespace_name ->
+       let _ = expect st Token.Newline in
+       (* M12: Parse use declarations *)
+       (match parse_use_declarations st [] with
+        | Error e -> Error e
+        | Ok uses ->
+            (* Now parse the rest of the program *)
+            (match parseStructEnumAndActors st [] [] [] [] [] [] [] [] with
+             | Error e -> Error e
+             | Ok prog ->
+                 Ok { prog with Ast.namespace_name; uses })))

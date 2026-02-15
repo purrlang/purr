@@ -50,6 +50,8 @@ type expr =
   | Spawn of { actor_type: string; fields: (string * expr) list; span: Span.t }  (* spawn ActorType { field: value, ... } *)
 
 type program = {
+  namespace_name: string;  (* M12: Namespace name (e.g., "xyzcorp.compiler") *)
+  uses: use_decl list;  (* M12: Use declarations *)
   structs: struct_def list;  (* M7: Struct definitions *)
   enums: enum_def list;  (* M8: Enum definitions *)
   messages: message_def list;  (* M14: Message definitions *)
@@ -58,6 +60,13 @@ type program = {
   actors: actor_def list;
   toplevel_funcs: func_def list;  (* M4: Top-level function declarations *)
   toplevel_tests: test_def list;  (* M5: Top-level test declarations *)
+}
+
+(* M12: Use declaration *)
+and use_decl = {
+  namespace: string;  (* Fully-qualified namespace name *)
+  alias: string;  (* Alias for the namespace (defaults to final segment) *)
+  span: Span.t;
 }
 
 (* M5: Top-level test declaration *)

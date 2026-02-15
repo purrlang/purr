@@ -61,6 +61,9 @@ type t =
   (* M7: Structs *)
   | Struct
   | Dot
+  (* M12: Namespaces *)
+  | Namespace
+  | Use
   (* M14: Messages *)
   | Message
   (* M8: Enums & Switch *)
@@ -144,6 +147,9 @@ let pp_kind fmt = function
   (* M7: Struct tokens *)
   | Struct -> Format.fprintf fmt "struct"
   | Dot -> Format.fprintf fmt "."
+  (* M12: Namespace tokens *)
+  | Namespace -> Format.fprintf fmt "namespace"
+  | Use -> Format.fprintf fmt "use"
   (* M14: Message tokens *)
   | Message -> Format.fprintf fmt "message"
   (* M8: Enum & Switch tokens *)

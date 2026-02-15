@@ -283,6 +283,8 @@ let tokenize file source =
           | "for" -> Token.For
           | "in" -> Token.In
           | "test" -> Token.Test
+          | "namespace" -> Token.Namespace
+          | "use" -> Token.Use
           | "bench" -> Token.Bench
           | "iterations" -> Token.Iterations
           | "setup" -> Token.Setup
