@@ -8,7 +8,7 @@ struct Queue {
 }
 
 fn queue_new(cap: i64) Queue {
-    var items: list<i64> = list_new()
+    var items: list<i64> = listNew()
     var q: Queue = Queue { items: items, capacity: cap, size: 0 }
     return q
 }
@@ -18,7 +18,7 @@ fn queue_enqueue(q: Queue, val: i64) i64 {
     if (q.size >= q.capacity) {
         return 0
     } else {
-        list_append(q.items, val)
+        listAppend(q.items, val)
         return 1
     }
 }
@@ -30,7 +30,7 @@ fn queue_dequeue(q: Queue) i64 {
         return -1
     } else {
         var idx: i64 = (q.size - 1)
-        var val: i64 = list_get(q.items, idx)
+        var val: i64 = listGet(q.items, idx)
         return val
     }
 }

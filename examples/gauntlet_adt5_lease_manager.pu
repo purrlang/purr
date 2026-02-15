@@ -7,17 +7,17 @@ enum LeaseStatus {
 }
 
 fn lease_store_new() map<string, i64> {
-    return map_new()
+    return mapNew()
 }
 
 fn lease_grant(store: map<string, i64>, tenant: string, expires_at: i64) i64 {
-    map_set(store, tenant, expires_at)
+    mapSet(store, tenant, expires_at)
     return expires_at
 }
 
 fn lease_check(store: map<string, i64>, tenant: string, now: i64) LeaseStatus {
-    if (map_has(store, tenant)) {
-        var expiry: i64 = map_get(store, tenant)
+    if (mapHas(store, tenant)) {
+        var expiry: i64 = mapGet(store, tenant)
         if (expiry >= now) {
             return Valid
         } else {

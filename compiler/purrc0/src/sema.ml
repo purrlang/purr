@@ -475,28 +475,28 @@ let add_predeclared_functions func_table =
   Hashtbl.add func_table "char_at"    { params = [Ast.String; Ast.I32]; return_ty = Ast.I32;  span = dummy };
   Hashtbl.add func_table "abs_i64"    { params = [Ast.I64];             return_ty = Ast.I64;  span = dummy };
   (* M9: list<T> built-ins — bootstrap uses List(I64) as the canonical concrete type *)
-  Hashtbl.add func_table "list_new"    { params = [];                                   return_ty = Ast.List Ast.I64;  span = dummy };
-  Hashtbl.add func_table "list_append" { params = [Ast.List Ast.I64; Ast.I64];          return_ty = Ast.Void;          span = dummy };
-  Hashtbl.add func_table "list_get"    { params = [Ast.List Ast.I64; Ast.I64];          return_ty = Ast.I64;           span = dummy };
-  Hashtbl.add func_table "list_length" { params = [Ast.List Ast.I64];                   return_ty = Ast.I64;           span = dummy };
-  Hashtbl.add func_table "list_set"    { params = [Ast.List Ast.I64; Ast.I64; Ast.I64]; return_ty = Ast.Void;          span = dummy };
+  Hashtbl.add func_table "listNew"    { params = [];                                   return_ty = Ast.List Ast.I64;  span = dummy };
+  Hashtbl.add func_table "listAppend" { params = [Ast.List Ast.I64; Ast.I64];          return_ty = Ast.Void;          span = dummy };
+  Hashtbl.add func_table "listGet"    { params = [Ast.List Ast.I64; Ast.I64];          return_ty = Ast.I64;           span = dummy };
+  Hashtbl.add func_table "listLength" { params = [Ast.List Ast.I64];                   return_ty = Ast.I64;           span = dummy };
+  Hashtbl.add func_table "listSet"    { params = [Ast.List Ast.I64; Ast.I64; Ast.I64]; return_ty = Ast.Void;          span = dummy };
   (* M9: map<string, T> built-ins *)
-  Hashtbl.add func_table "map_new"     { params = [];                                        return_ty = Ast.Map (Ast.String, Ast.I64); span = dummy };
-  Hashtbl.add func_table "map_set"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String; Ast.I64]; return_ty = Ast.Void; span = dummy };
-  Hashtbl.add func_table "map_get"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String]; return_ty = Ast.I64;  span = dummy };
-  Hashtbl.add func_table "map_has"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "mapNew"     { params = [];                                        return_ty = Ast.Map (Ast.String, Ast.I64); span = dummy };
+  Hashtbl.add func_table "mapSet"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String; Ast.I64]; return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "mapGet"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String]; return_ty = Ast.I64;  span = dummy };
+  Hashtbl.add func_table "mapHas"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String]; return_ty = Ast.Bool; span = dummy };
   (* M9: option<T> helpers *)
-  Hashtbl.add func_table "is_some"  { params = [Ast.Option Ast.I64]; return_ty = Ast.Bool; span = dummy };
-  Hashtbl.add func_table "is_none"  { params = [Ast.Option Ast.I64]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "isSome"  { params = [Ast.Option Ast.I64]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "isNone"  { params = [Ast.Option Ast.I64]; return_ty = Ast.Bool; span = dummy };
   Hashtbl.add func_table "unwrap"   { params = [Ast.Option Ast.I64]; return_ty = Ast.I64;  span = dummy };
   (* M9: result<T,E> helpers *)
-  Hashtbl.add func_table "is_ok"     { params = [Ast.Result (Ast.I64, Ast.String)]; return_ty = Ast.Bool; span = dummy };
-  Hashtbl.add func_table "unwrap_ok" { params = [Ast.Result (Ast.I64, Ast.String)]; return_ty = Ast.I64;  span = dummy };
+  Hashtbl.add func_table "isOk"     { params = [Ast.Result (Ast.I64, Ast.String)]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "unwrapOk" { params = [Ast.Result (Ast.I64, Ast.String)]; return_ty = Ast.I64;  span = dummy };
   (* M5: test assertion helpers *)
-  Hashtbl.add func_table "expect_eq_i32"  { params = [Ast.I32; Ast.I32]; return_ty = Ast.Void; span = dummy };
-  Hashtbl.add func_table "expect_eq_i64"  { params = [Ast.I64; Ast.I64]; return_ty = Ast.Void; span = dummy };
-  Hashtbl.add func_table "expect_true"    { params = [Ast.Bool];          return_ty = Ast.Void; span = dummy };
-  Hashtbl.add func_table "expect_false"   { params = [Ast.Bool];          return_ty = Ast.Void; span = dummy }
+  Hashtbl.add func_table "expectEqI32"  { params = [Ast.I32; Ast.I32]; return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "expectEqI64"  { params = [Ast.I64; Ast.I64]; return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "expectTrue"    { params = [Ast.Bool];          return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "expectFalse"   { params = [Ast.Bool];          return_ty = Ast.Void; span = dummy }
 
 let checkProgram program =
   (* M7: Build struct table *)

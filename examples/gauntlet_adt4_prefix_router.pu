@@ -4,18 +4,18 @@
 // (option<T> sugar not yet wired in parser; use i64 with 0 = None)
 
 fn router_new() map<string, i64> {
-    return map_new()
+    return mapNew()
 }
 
 fn router_add(router: map<string, i64>, path: string, route_id: i64) i64 {
-    map_set(router, path, route_id)
+    mapSet(router, path, route_id)
     return route_id
 }
 
 fn router_match(router: map<string, i64>, path: string) i64 {
     // Exact match only for bootstrap (prefix matching needs string ops)
-    if (map_has(router, path)) {
-        return map_get(router, path)
+    if (mapHas(router, path)) {
+        return mapGet(router, path)
     } else {
         return 0
     }

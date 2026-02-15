@@ -10,27 +10,27 @@ struct Frame {
 }
 
 fn frame_encode(f: Frame) list<i64> {
-    var buf: list<i64> = list_new()
-    list_append(buf, f.kind)
-    list_append(buf, f.length)
-    list_append(buf, f.payload)
+    var buf: list<i64> = listNew()
+    listAppend(buf, f.kind)
+    listAppend(buf, f.length)
+    listAppend(buf, f.payload)
     return buf
 }
 
 fn frame_decode_kind(buf: list<i64>) i64 {
-    return list_get(buf, 0)
+    return listGet(buf, 0)
 }
 
 fn frame_decode_length(buf: list<i64>) i64 {
-    return list_get(buf, 1)
+    return listGet(buf, 1)
 }
 
 fn frame_decode_payload(buf: list<i64>) i64 {
-    return list_get(buf, 2)
+    return listGet(buf, 2)
 }
 
 fn frame_buf_size(buf: list<i64>) i64 {
-    return list_length(buf)
+    return listLength(buf)
 }
 
 actor Main {

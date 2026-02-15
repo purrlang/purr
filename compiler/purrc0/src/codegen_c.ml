@@ -165,9 +165,9 @@ let generateC ir =
       | Ir.Call { result; func_name; args; result_ty } ->
           (* M4: Function call — remap Purr names to C names where needed *)
           let c_func_name = match func_name with
-            | "map_set" -> "map_set_str"
-            | "map_get" -> "map_get_str"
-            | "map_has" -> "map_has_str"
+            | "mapSet" -> "map_set_str"
+            | "mapGet" -> "map_get_str"
+            | "mapHas" -> "map_has_str"
             | n -> n
           in
           let args_str = String.concat ", " (List.map valueToC args) in
