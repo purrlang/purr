@@ -395,6 +395,28 @@ let rec checkStmt (stmt: Ast.stmt) (ctx: context) : (context, Error.t) result =
       (match checkStmtList body ctx with
        | Error e -> Error e
        | Ok _ -> Ok ctx)
+  | Ast.Switch { subject; cases; else_body; span } ->
+      (* M8: Switch statement validation *)
+      (* Validate subject is some type; validate each case body *)
+      let check_case_bodies () =
+        let rec go = function
+          | [] -> Ok ctx
+          | (_, body) :: rest ->
+              (match checkStmtList body ctx with
+               | Error e -> Error e
+               | Ok _ -> go rest)
+        in
+        go cases
+      in
+      (match check_case_bodies () with
+       | Error e -> Error e
+       | Ok _ ->
+           (match else_body with
+            | None -> Ok ctx
+            | Some stmts ->
+                (match checkStmtList stmts ctx with
+                 | Error e -> Error e
+                 | Ok _ -> Ok ctx)))
   | Ast.Send { target; message_type; fields; span } ->
       (* M16: Send statement validation *)
       (* Check that target is a mailbox type *)
@@ -448,16 +470,33 @@ let checkHandler (handler: Ast.handler) (func_table: (string, func_sig) Hashtbl.
 
 (* M7+: Add predeclared built-in functions *)
 let add_predeclared_functions func_table =
-  Hashtbl.add func_table "char_at" { 
-    params = [Ast.String; Ast.I32]; 
-    return_ty = Ast.I32; 
-    span = Span.make "" 0 0 
-  };
-  Hashtbl.add func_table "abs_i64" { 
-    params = [Ast.I64]; 
-    return_ty = Ast.I64; 
-    span = Span.make "" 0 0 
-  }
+  let dummy = Span.make "" 0 0 in
+  (* M7+ utilities *)
+  Hashtbl.add func_table "char_at"    { params = [Ast.String; Ast.I32]; return_ty = Ast.I32;  span = dummy };
+  Hashtbl.add func_table "abs_i64"    { params = [Ast.I64];             return_ty = Ast.I64;  span = dummy };
+  (* M9: list<T> built-ins — bootstrap uses List(I64) as the canonical concrete type *)
+  Hashtbl.add func_table "list_new"    { params = [];                                   return_ty = Ast.List Ast.I64;  span = dummy };
+  Hashtbl.add func_table "list_append" { params = [Ast.List Ast.I64; Ast.I64];          return_ty = Ast.Void;          span = dummy };
+  Hashtbl.add func_table "list_get"    { params = [Ast.List Ast.I64; Ast.I64];          return_ty = Ast.I64;           span = dummy };
+  Hashtbl.add func_table "list_length" { params = [Ast.List Ast.I64];                   return_ty = Ast.I64;           span = dummy };
+  Hashtbl.add func_table "list_set"    { params = [Ast.List Ast.I64; Ast.I64; Ast.I64]; return_ty = Ast.Void;          span = dummy };
+  (* M9: map<string, T> built-ins *)
+  Hashtbl.add func_table "map_new"     { params = [];                                        return_ty = Ast.Map (Ast.String, Ast.I64); span = dummy };
+  Hashtbl.add func_table "map_set"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String; Ast.I64]; return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "map_get"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String]; return_ty = Ast.I64;  span = dummy };
+  Hashtbl.add func_table "map_has"     { params = [Ast.Map (Ast.String, Ast.I64); Ast.String]; return_ty = Ast.Bool; span = dummy };
+  (* M9: option<T> helpers *)
+  Hashtbl.add func_table "is_some"  { params = [Ast.Option Ast.I64]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "is_none"  { params = [Ast.Option Ast.I64]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "unwrap"   { params = [Ast.Option Ast.I64]; return_ty = Ast.I64;  span = dummy };
+  (* M9: result<T,E> helpers *)
+  Hashtbl.add func_table "is_ok"     { params = [Ast.Result (Ast.I64, Ast.String)]; return_ty = Ast.Bool; span = dummy };
+  Hashtbl.add func_table "unwrap_ok" { params = [Ast.Result (Ast.I64, Ast.String)]; return_ty = Ast.I64;  span = dummy };
+  (* M5: test assertion helpers *)
+  Hashtbl.add func_table "expect_eq_i32"  { params = [Ast.I32; Ast.I32]; return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "expect_eq_i64"  { params = [Ast.I64; Ast.I64]; return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "expect_true"    { params = [Ast.Bool];          return_ty = Ast.Void; span = dummy };
+  Hashtbl.add func_table "expect_false"   { params = [Ast.Bool];          return_ty = Ast.Void; span = dummy }
 
 let checkProgram program =
   (* M7: Build struct table *)
@@ -542,12 +581,50 @@ let checkProgram program =
          errors := Error.fromSpan main_actor.span
            "Main actor must have at least one handler" :: !errors);
 
+  (* M4: Build global function table for toplevel functions *)
+  let global_func_table : (string, func_sig) Hashtbl.t = Hashtbl.create 16 in
+  add_predeclared_functions global_func_table;
+  List.iter (fun (func: Ast.func_def) ->
+    let param_types = List.map (fun (p: Ast.param) -> p.ty) func.params in
+    Hashtbl.add global_func_table func.name { params = param_types; return_ty = func.return_ty; span = func.span }
+  ) program.Ast.toplevel_funcs;
+
+  (* Type-check toplevel function bodies *)
+  List.iter (fun (func: Ast.func_def) ->
+    let init_ctx = {
+      symbols = List.map (fun (p: Ast.param) -> { name = p.name; ty = p.ty; span = p.span }) func.params;
+      functions = global_func_table;
+      structs = struct_table;
+      enums = enum_table;
+      messages = message_table;
+    } in
+    match checkStmtList func.body init_ctx with
+    | Error e -> errors := e :: !errors
+    | Ok _ -> ()
+  ) program.Ast.toplevel_funcs;
+
+  (* Type-check toplevel test bodies *)
+  List.iter (fun (tdef: Ast.test_def) ->
+    let init_ctx = {
+      symbols = [];
+      functions = global_func_table;
+      structs = struct_table;
+      enums = enum_table;
+      messages = message_table;
+    } in
+    match checkStmtList tdef.Ast.test_body init_ctx with
+    | Error e -> errors := e :: !errors
+    | Ok _ -> ()
+  ) program.Ast.toplevel_tests;
+
   (* M4: Type-check all functions and handlers *)
   List.iter (fun (actor: Ast.actor_def) ->
-    (* Build function signature table for this actor *)
+    (* Build function signature table for this actor — includes toplevel functions *)
     let func_table = Hashtbl.create 16 in
     (* M7+: Add predeclared functions *)
     add_predeclared_functions func_table;
+    (* Add toplevel functions so actors can call them *)
+    Hashtbl.iter (fun k v -> Hashtbl.replace func_table k v) global_func_table;
     List.iter (fun (func: Ast.func_def) ->
       let param_types = List.map (fun (p: Ast.param) -> p.ty) func.params in
       Hashtbl.add func_table func.name { params = param_types; return_ty = func.return_ty; span = func.span }

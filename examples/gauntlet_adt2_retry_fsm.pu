@@ -1,0 +1,102 @@
+// GATE 1B ADT-2: Retry State Machine
+// Enum-driven transitions: Idle -> Trying -> Backoff -> Failed
+// Uses switch statement for dispatch
+
+enum RetryState {
+    Idle | Trying | Backoff | Failed
+}
+
+fn transition(state: RetryState, attempts: i32) RetryState {
+    switch state {
+        | Idle {
+            return Trying
+        }
+        | Trying {
+            if (attempts >= 3) {
+                return Backoff
+            } else {
+                return Trying
+            }
+        }
+        | Backoff {
+            return Trying
+        }
+        | Failed {
+            return Failed
+        }
+        else {
+            return Failed
+        }
+    }
+}
+
+fn state_code(state: RetryState) i32 {
+    switch state {
+        | Idle    { return 0 }
+        | Trying  { return 1 }
+        | Backoff { return 2 }
+        | Failed  { return 3 }
+        else      { return -1 }
+    }
+}
+
+actor Main {
+    on start() {
+        print_string("GATE 1B ADT-2: Retry FSM")
+    }
+}
+
+test "idle_transitions_to_trying" {
+    var s: RetryState = Idle
+    var next: RetryState = transition(s, 0)
+    var code: i32 = state_code(next)
+    if (code == 1) {
+        print_string("PASS: idle_transitions_to_trying")
+    } else {
+        print_string("FAIL: idle_transitions_to_trying")
+    }
+}
+
+test "trying_below_limit_stays_trying" {
+    var s: RetryState = Trying
+    var next: RetryState = transition(s, 1)
+    var code: i32 = state_code(next)
+    if (code == 1) {
+        print_string("PASS: trying_below_limit_stays_trying")
+    } else {
+        print_string("FAIL: trying_below_limit_stays_trying")
+    }
+}
+
+test "trying_at_limit_goes_to_backoff" {
+    var s: RetryState = Trying
+    var next: RetryState = transition(s, 3)
+    var code: i32 = state_code(next)
+    if (code == 2) {
+        print_string("PASS: trying_at_limit_goes_to_backoff")
+    } else {
+        print_string("FAIL: trying_at_limit_goes_to_backoff")
+    }
+}
+
+test "backoff_returns_to_trying" {
+    var s: RetryState = Backoff
+    var next: RetryState = transition(s, 0)
+    var code: i32 = state_code(next)
+    if (code == 1) {
+        print_string("PASS: backoff_returns_to_trying")
+    } else {
+        print_string("FAIL: backoff_returns_to_trying")
+    }
+}
+
+test "failed_stays_failed" {
+    var s: RetryState = Failed
+    var next: RetryState = transition(s, 99)
+    var code: i32 = state_code(next)
+    if (code == 3) {
+        print_string("PASS: failed_stays_failed")
+    } else {
+        print_string("FAIL: failed_stays_failed")
+    }
+}

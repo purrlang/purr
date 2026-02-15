@@ -130,10 +130,10 @@ let generateC ir =
     in
     Buffer.add_string buf (Printf.sprintf "%s %s(%s) {\n" return_type func.name params_str);
     
-    (* First pass: collect and emit variable declarations *)
+    (* First pass: collect and emit variable declarations — skip void temps *)
     List.iter (fun instr ->
       match instr with
-      | Ir.DeclareVar { name; ty } ->
+      | Ir.DeclareVar { name; ty } when ty <> Ast.Void && ty <> Ast.Nil ->
           Buffer.add_string buf (Printf.sprintf "    %s %s;\n" (typeToC ty) name)
       | _ -> ()
     ) func.body;
@@ -163,9 +163,19 @@ let generateC ir =
           let operand_str = valueToC operand in
           Buffer.add_string buf (Printf.sprintf "    %s = %s%s;\n" result op_str operand_str)
       | Ir.Call { result; func_name; args; result_ty } ->
-          (* M4: Function call *)
+          (* M4: Function call — remap Purr names to C names where needed *)
+          let c_func_name = match func_name with
+            | "map_set" -> "map_set_str"
+            | "map_get" -> "map_get_str"
+            | "map_has" -> "map_has_str"
+            | n -> n
+          in
           let args_str = String.concat ", " (List.map valueToC args) in
-          Buffer.add_string buf (Printf.sprintf "    %s = %s(%s);\n" result func_name args_str)
+          (* Void-returning functions cannot be assigned to a variable in C *)
+          if result_ty = Ast.Void then
+            Buffer.add_string buf (Printf.sprintf "    %s(%s);\n" c_func_name args_str)
+          else
+            Buffer.add_string buf (Printf.sprintf "    %s = %s(%s);\n" result c_func_name args_str)
       | Ir.CallPrint v ->
           (match v with
            | Ir.StringVal s ->
@@ -222,10 +232,29 @@ let generateC ir =
     Buffer.add_string buf "}\n\n"
   ) ir.Ir.benches;
 
+  (* M5: If tests exist, generate forward declarations and a run_tests() function *)
+  let has_tests = ir.Ir.toplevel_tests <> [] in
+  if has_tests then begin
+    List.iter (fun (tdef: Ast.test_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' tdef.Ast.test_name) in
+      let func_id = Printf.sprintf "__test__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "void %s(void);\n" func_id)
+    ) ir.Ir.toplevel_tests;
+    Buffer.add_string buf "\nvoid run_tests(void) {\n";
+    List.iter (fun (tdef: Ast.test_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' tdef.Ast.test_name) in
+      let func_id = Printf.sprintf "__test__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "    %s();\n" func_id)
+    ) ir.Ir.toplevel_tests;
+    Buffer.add_string buf "}\n\n"
+  end;
+
   (* main function *)
   Buffer.add_string buf "int main(void) {\n";
   Buffer.add_string buf "    runtimeInit();\n";
   Buffer.add_string buf (Printf.sprintf "    %s();\n" ir.Ir.entry);
+  if has_tests then
+    Buffer.add_string buf "    run_tests();\n";
   Buffer.add_string buf "    return 0;\n";
   Buffer.add_string buf "}\n";
 

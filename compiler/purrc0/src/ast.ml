@@ -55,6 +55,15 @@ type program = {
   messages: message_def list;  (* M14: Message definitions *)
   benches: bench_def list;  (* M10.5: Benchmark definitions *)
   actors: actor_def list;
+  toplevel_funcs: func_def list;  (* M4: Top-level function declarations *)
+  toplevel_tests: test_def list;  (* M5: Top-level test declarations *)
+}
+
+(* M5: Top-level test declaration *)
+and test_def = {
+  test_name: string;
+  test_body: stmt list;
+  test_span: Span.t;
 }
 
 (* M10.5: Benchmark definition *)
@@ -149,6 +158,13 @@ and stmt =
   | Test of {
     name: string;
     body: stmt list;
+    span: Span.t;
+  }
+  (* M8: Switch expression matching on enum variants *)
+  | Switch of {
+    subject: expr;
+    cases: (string * stmt list) list;  (* variant_name * body *)
+    else_body: stmt list option;
     span: Span.t;
   }
   (* M16: Send message to actor *)

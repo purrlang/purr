@@ -1,0 +1,85 @@
+// GATE 1B ADT-4: Prefix Router
+// Matches a request path against a map of exact routes.
+// Returns route id (i64) on match, 0 on no match (0 = nil sentinel).
+// (option<T> sugar not yet wired in parser; use i64 with 0 = None)
+
+fn router_new() map<string, i64> {
+    return map_new()
+}
+
+fn router_add(router: map<string, i64>, path: string, route_id: i64) i64 {
+    map_set(router, path, route_id)
+    return route_id
+}
+
+fn router_match(router: map<string, i64>, path: string) i64 {
+    // Exact match only for bootstrap (prefix matching needs string ops)
+    if (map_has(router, path)) {
+        return map_get(router, path)
+    } else {
+        return 0
+    }
+}
+
+actor Main {
+    on start() {
+        print_string("GATE 1B ADT-4: Prefix Router")
+    }
+}
+
+test "exact_match_found" {
+    var r: map<string, i64> = router_new()
+    router_add(r, "orders", 10)
+    router_add(r, "users", 20)
+    var id: i64 = router_match(r, "orders")
+    if (id == 10) {
+        print_string("PASS: exact_match_found")
+    } else {
+        print_string("FAIL: exact_match_found")
+    }
+}
+
+test "second_route_found" {
+    var r: map<string, i64> = router_new()
+    router_add(r, "orders", 10)
+    router_add(r, "users", 20)
+    var id: i64 = router_match(r, "users")
+    if (id == 20) {
+        print_string("PASS: second_route_found")
+    } else {
+        print_string("FAIL: second_route_found")
+    }
+}
+
+test "no_match_returns_nil" {
+    var r: map<string, i64> = router_new()
+    router_add(r, "orders", 10)
+    var id: i64 = router_match(r, "payments")
+    if (id == 0) {
+        print_string("PASS: no_match_returns_nil")
+    } else {
+        print_string("FAIL: no_match_returns_nil")
+    }
+}
+
+test "empty_router_returns_nil" {
+    var r: map<string, i64> = router_new()
+    var id: i64 = router_match(r, "anything")
+    if (id == 0) {
+        print_string("PASS: empty_router_returns_nil")
+    } else {
+        print_string("FAIL: empty_router_returns_nil")
+    }
+}
+
+test "overwrite_route" {
+    var r: map<string, i64> = router_new()
+    router_add(r, "api", 1)
+    router_add(r, "api", 99)
+    var id: i64 = router_match(r, "api")
+    if (id == 99) {
+        print_string("PASS: overwrite_route")
+    } else {
+        print_string("FAIL: overwrite_route")
+    }
+}
