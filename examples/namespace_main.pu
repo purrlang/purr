@@ -1,0 +1,34 @@
+// M12 Namespace Example: Main module
+namespace example.main
+
+use example.math
+use example.utils = util
+
+actor Main {
+    on start() {
+        // Use qualified names
+        var result: i64 = math.add(5, 3)
+        print_i64(result)
+
+        var doubled: i64 = util.double(10)
+        print_i64(doubled)
+
+        print_string("Namespace test complete")
+    }
+}
+
+test "namespace usage works" {
+    var sum: i64 = math.add(2, 3)
+    if (sum == 5) {
+        print_string("PASS: namespace add")
+    } else {
+        print_string("FAIL: namespace add")
+    }
+
+    var doubled: i64 = util.double(7)
+    if (doubled == 14) {
+        print_string("PASS: namespace double")
+    } else {
+        print_string("FAIL: namespace double")
+    }
+}

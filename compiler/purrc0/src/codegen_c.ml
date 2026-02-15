@@ -69,11 +69,26 @@ let unopToC (op: Ast.unop) : string =
 
 let generateC ir =
   let buf = Buffer.create 1024 in
-  
+
+  (* M12: Add namespace information as comments *)
+  Buffer.add_string buf (Printf.sprintf "/* Namespace: %s */\n" ir.Ir.namespace_name);
+  if ir.Ir.uses <> [] then begin
+    Buffer.add_string buf "/* Uses: ";
+    List.iter (fun (use_decl: Ast.use_decl) ->
+      Buffer.add_string buf (Printf.sprintf "%s = %s, " use_decl.alias use_decl.namespace)
+    ) ir.Ir.uses;
+    Buffer.add_string buf "*/\n"
+  end;
+  Buffer.add_string buf "\n";
+
   (* Header *)
   Buffer.add_string buf "#include \"purr_runtime.h\"\n";
   Buffer.add_string buf "#include <stdint.h>\n";
-  Buffer.add_string buf "#include <stdbool.h>\n\n";
+  Buffer.add_string buf "#include <stdbool.h>\n";
+  Buffer.add_string buf "#include <stdio.h>\n";
+  if ir.Ir.benches <> [] then
+    Buffer.add_string buf "#include <time.h>\n";
+  Buffer.add_string buf "\n";
   
   (* M7: Generate struct definitions *)
   List.iter (fun (sdef: Ast.struct_def) ->
@@ -104,6 +119,21 @@ let generateC ir =
     Buffer.add_string buf "};\n\n"
   ) ir.Ir.messages;
 
+  (* M11: Generate extern C function declarations *)
+  List.iter (fun (edef: Ast.extern_def) ->
+    let return_type = typeToC edef.return_ty in
+    let params_str = match edef.params with
+      | [] -> "void"
+      | params ->
+          String.concat ", " (List.map (fun (name, ty) ->
+            Printf.sprintf "%s %s" (typeToC ty) name
+          ) params)
+    in
+    Buffer.add_string buf (Printf.sprintf "%s %s(%s);\n" return_type edef.name params_str)
+  ) ir.Ir.extern_funcs;
+  if ir.Ir.extern_funcs <> [] then
+    Buffer.add_string buf "\n";
+
   (* Generate function forward declarations *)
   List.iter (fun (func: Ir.func) ->
     let return_type = typeToC func.return_ty in
@@ -130,10 +160,10 @@ let generateC ir =
     in
     Buffer.add_string buf (Printf.sprintf "%s %s(%s) {\n" return_type func.name params_str);
     
-    (* First pass: collect and emit variable declarations *)
+    (* First pass: collect and emit variable declarations — skip void temps *)
     List.iter (fun instr ->
       match instr with
-      | Ir.DeclareVar { name; ty } ->
+      | Ir.DeclareVar { name; ty } when ty <> Ast.Void && ty <> Ast.Nil ->
           Buffer.add_string buf (Printf.sprintf "    %s %s;\n" (typeToC ty) name)
       | _ -> ()
     ) func.body;
@@ -163,9 +193,19 @@ let generateC ir =
           let operand_str = valueToC operand in
           Buffer.add_string buf (Printf.sprintf "    %s = %s%s;\n" result op_str operand_str)
       | Ir.Call { result; func_name; args; result_ty } ->
-          (* M4: Function call *)
+          (* M4: Function call — remap Purr names to C names where needed *)
+          let c_func_name = match func_name with
+            | "mapSet" -> "map_set_str"
+            | "mapGet" -> "map_get_str"
+            | "mapHas" -> "map_has_str"
+            | n -> n
+          in
           let args_str = String.concat ", " (List.map valueToC args) in
-          Buffer.add_string buf (Printf.sprintf "    %s = %s(%s);\n" result func_name args_str)
+          (* Void-returning functions cannot be assigned to a variable in C *)
+          if result_ty = Ast.Void then
+            Buffer.add_string buf (Printf.sprintf "    %s(%s);\n" c_func_name args_str)
+          else
+            Buffer.add_string buf (Printf.sprintf "    %s = %s(%s);\n" result c_func_name args_str)
       | Ir.CallPrint v ->
           (match v with
            | Ir.StringVal s ->
@@ -207,25 +247,65 @@ let generateC ir =
     Buffer.add_string buf "}\n\n"
   ) ir.Ir.functions;
 
-  (* M10.5: Generate benchmark functions *)
-  List.iter (fun (bench: Ast.bench_def) ->
-    let func_name = Printf.sprintf "bench_%s" bench.name in
-    Buffer.add_string buf (Printf.sprintf "void %s(void) {\n" func_name);
-    Buffer.add_string buf (Printf.sprintf "    /* Benchmark: %s (iterations: %d) */\n" bench.name bench.iterations);
-
-    (* TODO: Generate setup_body statements *)
-    (* For now, we'll generate placeholder comments *)
-    Buffer.add_string buf (Printf.sprintf "    int64_t __iterations = %dLL;\n" bench.iterations);
-    Buffer.add_string buf "    for (int64_t __i = 0; __i < __iterations; __i++) {\n";
-    Buffer.add_string buf "        /* run_body code would go here */\n";
-    Buffer.add_string buf "    }\n";
+  (* M10.5: If benchmarks exist, generate forward declarations for benchmark functions *)
+  let has_benches = ir.Ir.benches <> [] in
+  if has_benches then begin
+    List.iter (fun (bdef: Ast.bench_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' bdef.Ast.name) in
+      let func_id = Printf.sprintf "__bench__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "void %s(void);\n" func_id)
+    ) ir.Ir.benches;
+    Buffer.add_string buf "\nvoid run_benches(void) {\n";
+    Buffer.add_string buf "    struct timespec start, end;\n";
+    Buffer.add_string buf "    long long ns_elapsed = 0;\n";
+    Buffer.add_string buf "    PurrInstrCounters before, after;\n\n";
+    List.iter (fun (bdef: Ast.bench_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' bdef.Ast.name) in
+      let func_id = Printf.sprintf "__bench__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "    /* Run benchmark: %s */\n" bdef.Ast.name);
+      Buffer.add_string buf "    reset_instr_counters();\n";
+      Buffer.add_string buf "    before = get_instr_counters();\n";
+      Buffer.add_string buf "    clock_gettime(CLOCK_MONOTONIC, &start);\n";
+      Buffer.add_string buf (Printf.sprintf "    for (int __i = 0; __i < %d; __i++) {\n" bdef.Ast.iterations);
+      Buffer.add_string buf (Printf.sprintf "        %s();\n" func_id);
+      Buffer.add_string buf "    }\n";
+      Buffer.add_string buf "    clock_gettime(CLOCK_MONOTONIC, &end);\n";
+      Buffer.add_string buf "    after = get_instr_counters();\n";
+      Buffer.add_string buf "    ns_elapsed = ((long long)end.tv_sec * 1000000000LL + end.tv_nsec) -\n";
+      Buffer.add_string buf "                 ((long long)start.tv_sec * 1000000000LL + start.tv_nsec);\n";
+      Buffer.add_string buf (Printf.sprintf "    printf(\"BENCH name=\\\"%s\\\" iterations=%d alloc_count=%%lld bytes_allocated=%%lld ns=%%lld ns_per_iter=%%lld\\\\n\",\n"
+        bdef.Ast.name bdef.Ast.iterations);
+      Buffer.add_string buf "           (long long)after.alloc_count,\n";
+      Buffer.add_string buf "           (long long)after.bytes_allocated,\n";
+      Buffer.add_string buf "           ns_elapsed,\n";
+      Buffer.add_string buf (Printf.sprintf "           ns_elapsed / %d);\n\n" bdef.Ast.iterations)
+    ) ir.Ir.benches;
     Buffer.add_string buf "}\n\n"
-  ) ir.Ir.benches;
+  end;
+
+  (* M5: If tests exist, generate forward declarations and a run_tests() function *)
+  let has_tests = ir.Ir.toplevel_tests <> [] in
+  if has_tests then begin
+    List.iter (fun (tdef: Ast.test_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' tdef.Ast.test_name) in
+      let func_id = Printf.sprintf "__test__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "void %s(void);\n" func_id)
+    ) ir.Ir.toplevel_tests;
+    Buffer.add_string buf "\nvoid run_tests(void) {\n";
+    List.iter (fun (tdef: Ast.test_def) ->
+      let safe_name = String.concat "_" (String.split_on_char ' ' tdef.Ast.test_name) in
+      let func_id = Printf.sprintf "__test__%s" safe_name in
+      Buffer.add_string buf (Printf.sprintf "    %s();\n" func_id)
+    ) ir.Ir.toplevel_tests;
+    Buffer.add_string buf "}\n\n"
+  end;
 
   (* main function *)
   Buffer.add_string buf "int main(void) {\n";
   Buffer.add_string buf "    runtimeInit();\n";
   Buffer.add_string buf (Printf.sprintf "    %s();\n" ir.Ir.entry);
+  if has_tests then
+    Buffer.add_string buf "    run_tests();\n";
   Buffer.add_string buf "    return 0;\n";
   Buffer.add_string buf "}\n";
 

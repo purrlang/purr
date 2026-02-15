@@ -6,6 +6,15 @@
 #include <string.h>
 #include <stdbool.h>
 
+/* --- Basic runtime --- */
+void runtimeInit(void);
+void print_string(const char* s);
+void print_i32(int32_t n);
+void print_i64(int64_t n);
+void print_bool(_Bool b);
+int32_t char_at(const char* s, int32_t index);
+int64_t abs_i64(int64_t n);
+
 /* ============================================================================
    M9 Container Runtime Support
    Provides C implementations for Purr's container types:
@@ -132,5 +141,62 @@ int64_t purr_map_count(PurrMap* map);
 
 /* Clear the map (remove all entries) */
 void purr_map_clear(PurrMap* map);
+
+/* ============================================================================
+   Purr-level container API wrappers
+   These are called directly by generated code.
+   ============================================================================ */
+
+/* --- list<T> wrappers (elements stored as int64_t cast through void*) --- */
+PurrList* list_new(void);
+void      list_append(PurrList* l, int64_t elem);
+int64_t   list_get(PurrList* l, int64_t idx);
+int64_t   list_length(PurrList* l);
+void      list_set(PurrList* l, int64_t idx, int64_t elem);
+
+/* --- map<string, T> wrappers (string keys, int64_t values) --- */
+PurrMap*  map_new(void);
+void      map_set_str(PurrMap* m, const char* k, int64_t v);
+int64_t   map_get_str(PurrMap* m, const char* k);
+_Bool     map_has_str(PurrMap* m, const char* k);
+
+/* String hash/equals helpers used internally by map wrappers */
+int purr_str_hash(void* key);
+int purr_str_equals(void* a, void* b);
+
+/* --- M5: test assertion helpers --- */
+void expect_eq_i32(int32_t actual, int32_t expected);
+void expect_eq_i64(int64_t actual, int64_t expected);
+void expect_true(_Bool cond);
+void expect_false(_Bool cond);
+
+/* --- option<T> helpers (option represented as int64_t; 0 = None, non-zero = Some) --- */
+_Bool   is_some(int64_t opt);
+_Bool   is_none(int64_t opt);
+int64_t unwrap(int64_t opt);
+
+/* --- result<T,E> helpers (positive = Ok value, INT64_MIN = Err sentinel) --- */
+#define PURR_ERR_SENTINEL INT64_MIN
+_Bool   is_ok(int64_t res);
+int64_t unwrap_ok(int64_t res);
+
+/* ============================================================================
+   M10.5: Instrumentation API for Benchmarking
+   Tracks allocations and performance metrics during benchmark runs.
+   ============================================================================ */
+
+/* Instrumentation counter structure */
+typedef struct {
+  int64_t alloc_count;      /* Number of allocations */
+  int64_t bytes_allocated;  /* Total bytes allocated */
+  int64_t message_count;    /* Number of messages dispatched (for actors) */
+  int64_t scheduler_steps;  /* Number of scheduler steps (for actors) */
+} PurrInstrCounters;
+
+/* Get current instrumentation counters */
+PurrInstrCounters get_instr_counters(void);
+
+/* Reset instrumentation counters */
+void reset_instr_counters(void);
 
 #endif /* PURR_RUNTIME_H */

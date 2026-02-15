@@ -1,0 +1,97 @@
+// GATE 1B ADT-3: Frame Encoder / Decoder
+// Encodes a Frame struct into a list<i64> byte buffer, decodes it back,
+// and verifies round-trip correctness.
+// (purr.std.bytes not yet available; uses list<i64> as byte buffer)
+
+struct Frame {
+    kind: i64
+    length: i64
+    payload: i64
+}
+
+fn frame_encode(f: Frame) list<i64> {
+    var buf: list<i64> = listNew()
+    listAppend(buf, f.kind)
+    listAppend(buf, f.length)
+    listAppend(buf, f.payload)
+    return buf
+}
+
+fn frame_decode_kind(buf: list<i64>) i64 {
+    return listGet(buf, 0)
+}
+
+fn frame_decode_length(buf: list<i64>) i64 {
+    return listGet(buf, 1)
+}
+
+fn frame_decode_payload(buf: list<i64>) i64 {
+    return listGet(buf, 2)
+}
+
+fn frame_buf_size(buf: list<i64>) i64 {
+    return listLength(buf)
+}
+
+actor Main {
+    on start() {
+        print_string("GATE 1B ADT-3: Frame Encoder")
+    }
+}
+
+test "encode_produces_3_fields" {
+    var f: Frame = Frame { kind: 1, length: 8, payload: 42 }
+    var buf: list<i64> = frame_encode(f)
+    var sz: i64 = frame_buf_size(buf)
+    if (sz == 3) {
+        print_string("PASS: encode_produces_3_fields")
+    } else {
+        print_string("FAIL: encode_produces_3_fields")
+    }
+}
+
+test "decode_kind_roundtrip" {
+    var f: Frame = Frame { kind: 7, length: 4, payload: 99 }
+    var buf: list<i64> = frame_encode(f)
+    var kind: i64 = frame_decode_kind(buf)
+    if (kind == 7) {
+        print_string("PASS: decode_kind_roundtrip")
+    } else {
+        print_string("FAIL: decode_kind_roundtrip")
+    }
+}
+
+test "decode_length_roundtrip" {
+    var f: Frame = Frame { kind: 2, length: 16, payload: 0 }
+    var buf: list<i64> = frame_encode(f)
+    var length: i64 = frame_decode_length(buf)
+    if (length == 16) {
+        print_string("PASS: decode_length_roundtrip")
+    } else {
+        print_string("FAIL: decode_length_roundtrip")
+    }
+}
+
+test "decode_payload_roundtrip" {
+    var f: Frame = Frame { kind: 3, length: 4, payload: 12345 }
+    var buf: list<i64> = frame_encode(f)
+    var payload: i64 = frame_decode_payload(buf)
+    if (payload == 12345) {
+        print_string("PASS: decode_payload_roundtrip")
+    } else {
+        print_string("FAIL: decode_payload_roundtrip")
+    }
+}
+
+test "zero_frame_roundtrip" {
+    var f: Frame = Frame { kind: 0, length: 0, payload: 0 }
+    var buf: list<i64> = frame_encode(f)
+    var k: i64 = frame_decode_kind(buf)
+    var l: i64 = frame_decode_length(buf)
+    var p: i64 = frame_decode_payload(buf)
+    if (((k == 0) && (l == 0)) && (p == 0)) {
+        print_string("PASS: zero_frame_roundtrip")
+    } else {
+        print_string("FAIL: zero_frame_roundtrip")
+    }
+}

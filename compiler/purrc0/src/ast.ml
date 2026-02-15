@@ -50,11 +50,30 @@ type expr =
   | Spawn of { actor_type: string; fields: (string * expr) list; span: Span.t }  (* spawn ActorType { field: value, ... } *)
 
 type program = {
+  namespace_name: string;  (* M12: Namespace name (e.g., "xyzcorp.compiler") *)
+  uses: use_decl list;  (* M12: Use declarations *)
   structs: struct_def list;  (* M7: Struct definitions *)
   enums: enum_def list;  (* M8: Enum definitions *)
   messages: message_def list;  (* M14: Message definitions *)
   benches: bench_def list;  (* M10.5: Benchmark definitions *)
+  extern_funcs: extern_def list;  (* M11: Extern C function declarations *)
   actors: actor_def list;
+  toplevel_funcs: func_def list;  (* M4: Top-level function declarations *)
+  toplevel_tests: test_def list;  (* M5: Top-level test declarations *)
+}
+
+(* M12: Use declaration *)
+and use_decl = {
+  namespace: string;  (* Fully-qualified namespace name *)
+  alias: string;  (* Alias for the namespace (defaults to final segment) *)
+  span: Span.t;
+}
+
+(* M5: Top-level test declaration *)
+and test_def = {
+  test_name: string;
+  test_body: stmt list;
+  test_span: Span.t;
 }
 
 (* M10.5: Benchmark definition *)
@@ -151,6 +170,13 @@ and stmt =
     body: stmt list;
     span: Span.t;
   }
+  (* M8: Switch expression matching on enum variants *)
+  | Switch of {
+    subject: expr;
+    cases: (string * stmt list) list;  (* variant_name * body *)
+    else_body: stmt list option;
+    span: Span.t;
+  }
   (* M16: Send message to actor *)
   | Send of {
     target: expr;  (* Expression that evaluates to a mailbox *)
@@ -171,5 +197,13 @@ and func_def = {
   params: param list;
   return_ty: ty;
   body: stmt list;
+  span: Span.t;
+}
+
+(* M11: Extern C function declarations *)
+and extern_def = {
+  name: string;
+  params: param list;
+  return_ty: ty;
   span: Span.t;
 }

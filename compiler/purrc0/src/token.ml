@@ -42,6 +42,7 @@ type t =
   | Fn
   | Return
   | Arrow
+  | Extern  (* M11: FFI - extern C functions *)
   (* M5: Control flow *)
   | If
   | Else
@@ -60,6 +61,9 @@ type t =
   (* M7: Structs *)
   | Struct
   | Dot
+  (* M12: Namespaces *)
+  | Namespace
+  | Use
   (* M14: Messages *)
   | Message
   (* M8: Enums & Switch *)
@@ -124,6 +128,7 @@ let pp_kind fmt = function
   | Fn -> Format.fprintf fmt "fn"
   | Return -> Format.fprintf fmt "return"
   | Arrow -> Format.fprintf fmt "->"
+  | Extern -> Format.fprintf fmt "extern"
   (* M5: Control flow tokens *)
   | If -> Format.fprintf fmt "if"
   | Else -> Format.fprintf fmt "else"
@@ -142,6 +147,9 @@ let pp_kind fmt = function
   (* M7: Struct tokens *)
   | Struct -> Format.fprintf fmt "struct"
   | Dot -> Format.fprintf fmt "."
+  (* M12: Namespace tokens *)
+  | Namespace -> Format.fprintf fmt "namespace"
+  | Use -> Format.fprintf fmt "use"
   (* M14: Message tokens *)
   | Message -> Format.fprintf fmt "message"
   (* M8: Enum & Switch tokens *)
