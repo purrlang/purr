@@ -76,3 +76,17 @@ let compile inputFile =
                       | Ok () ->
                           (* Compile C to exe *)
                           compileCSource cFile exeName))))
+
+let () =
+  match Sys.argv with
+  | [| _; inputFile |] ->
+      (match compile inputFile with
+       | Ok () ->
+           Printf.printf "Compilation successful\n";
+           exit 0
+       | Error e ->
+           Printf.eprintf "%s\n" (Error.format e);
+           exit 1)
+  | _ ->
+      Printf.eprintf "Usage: purrc0 <file.purr>\n";
+      exit 1

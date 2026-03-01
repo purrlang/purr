@@ -1,29 +1,161 @@
-# dune build
+# C:\Users\jrepa\AppData\Local\opam\default\bin\dune.exe build --profile byte
 # OCAMLPARAM: unset
-# Shared cache: disabled
-# Shared cache location: /root/.cache/dune/db
-# Workspace root: /home/user/purr/compiler/purrc0
-# Auto-detected concurrency: 16
+# Shared cache: enabled-except-user-rules
+# Shared cache location:
+# C:\Users\jrepa\AppData\Local\Microsoft\Windows\INetCache\dune\db
+# Workspace root: "D:\\repos\\purrlang\\purr\\compiler\\purrc0"
+# Auto-detected concurrency: 4
 # Dune context:
 #  { name = "default"
 #  ; kind = "default"
-#  ; profile = Dev
+#  ; profile = User_defined "byte"
 #  ; merlin = true
 #  ; fdo_target_exe = None
 #  ; build_dir = In_build_dir "default"
-#  ; installed_env =
-#      map { "INSIDE_DUNE" : "/home/user/purr/compiler/purrc0/_build/default" }
 #  ; instrument_with = []
 #  }
-$ /usr/bin/ocamlc.opt -config > /tmp/dune_b580b6_output
-$ (cd _build/default && /usr/bin/ocamldep.opt -modules -impl src/parser.ml) > _build/default/src/.purrc0_lib.objs/purrc0_lib__Parser.impl.d
-$ (cd _build/default && /usr/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -bin-annot -I src/.purrc0_lib.objs/byte -no-alias-deps -opaque -open Purrc0_lib -o src/.purrc0_lib.objs/byte/purrc0_lib__Parser.cmo -c -impl src/parser.ml)
-$ (cd _build/default && /usr/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -bin-annot -I src/.purrc0_lib.objs/byte -no-alias-deps -opaque -open Purrc0_lib -o src/.purrc0_lib.objs/byte/purrc0_lib__Driver.cmo -c -impl src/driver.ml)
-$ (cd _build/default && /usr/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -a -o src/purrc0_lib.cma src/.purrc0_lib.objs/byte/purrc0_lib.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Span.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Token.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Ast.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Error.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Sema.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Parser.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Lexer.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Ir.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Codegen_c.cmo src/.purrc0_lib.objs/byte/purrc0_lib__Driver.cmo)
-$ (cd _build/default && /usr/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I bin/.main.eobjs/byte -I src/.purrc0_lib.objs/byte -no-alias-deps -opaque -o bin/.main.eobjs/byte/dune__exe__Main.cmi -c -intf bin/main.mli)
-$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -I src/.purrc0_lib.objs/byte -I src/.purrc0_lib.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Purrc0_lib -o src/.purrc0_lib.objs/native/purrc0_lib__Driver.cmx -c -impl src/driver.ml)
-$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I bin/.main.eobjs/byte -I bin/.main.eobjs/native -I src/.purrc0_lib.objs/byte -I src/.purrc0_lib.objs/native -intf-suffix .ml -no-alias-deps -opaque -o bin/.main.eobjs/native/dune__exe__Main.cmx -c -impl bin/main.ml)
-$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -I src/.purrc0_lib.objs/byte -I src/.purrc0_lib.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Purrc0_lib -o src/.purrc0_lib.objs/native/purrc0_lib__Parser.cmx -c -impl src/parser.ml)
-$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -a -o src/purrc0_lib.cmxa src/.purrc0_lib.objs/native/purrc0_lib.cmx src/.purrc0_lib.objs/native/purrc0_lib__Span.cmx src/.purrc0_lib.objs/native/purrc0_lib__Token.cmx src/.purrc0_lib.objs/native/purrc0_lib__Ast.cmx src/.purrc0_lib.objs/native/purrc0_lib__Error.cmx src/.purrc0_lib.objs/native/purrc0_lib__Sema.cmx src/.purrc0_lib.objs/native/purrc0_lib__Parser.cmx src/.purrc0_lib.objs/native/purrc0_lib__Lexer.cmx src/.purrc0_lib.objs/native/purrc0_lib__Ir.cmx src/.purrc0_lib.objs/native/purrc0_lib__Codegen_c.cmx src/.purrc0_lib.objs/native/purrc0_lib__Driver.cmx)
-$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -w -30-8-27-39-26 -g -shared -linkall -I src -o src/purrc0_lib.cmxs src/purrc0_lib.cmxa)
-$ (cd _build/default && /usr/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62@67@69-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -o bin/main.exe /usr/lib/ocaml/str.cmxa -I /usr/lib/ocaml src/purrc0_lib.cmxa bin/.main.eobjs/native/dune__exe__Main.cmx)
+$ C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -config > C:\Users\jrepa\AppData\Local\Temp\dune_c858f2_output
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -w -53 -w -49 -nopervasives -nostdlib -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -o src/.driver.eobjs/byte/dune__exe.cmo -c -impl src/.driver.eobjs/dune__exe.ml-gen)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Span.cmo -c -impl src/span.ml)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Driver.cmi -c -intf src/driver.mli)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Ast.cmo -c -impl src/ast.ml)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlopt.opt.exe -w -40 -w -53 -w -49 -nopervasives -nostdlib -g -I src/.driver.eobjs/byte -I src/.driver.eobjs/native -cmi-file src/.driver.eobjs/byte/dune__exe.cmi -no-alias-deps -o src/.driver.eobjs/native/dune__exe.cmx -c -impl src/.driver.eobjs/dune__exe.ml-gen)
+> 'gcc' is not recognized as an internal or external command,
+> operable program or batch file.
+> File "src/.driver.eobjs/dune__exe.ml-gen", line 1:
+> Error: Assembler error, input left in file C:\Users\jrepa\AppData\Local\Temp\camlasm240ac8.s
+[2]
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Error.cmo -c -impl src/error.ml)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Token.cmo -c -impl src/token.ml)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Sema.cmo -c -impl src/sema.ml)
+> File "src/sema.ml", line 107, characters 10-116:
+> 107 |           (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool"))))
+>                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Struct _|Enum _|Option _|Result (_, _)|List _|Map (_, _)|
+>     Fixed (_, _)|Slice _)
+>
+> File "src/sema.ml", line 136, characters 20-164:
+> 136 |                     (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e)
+>                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Option _|Result (_, _)|List _|Map (_, _)|Fixed (_, _)|Slice _)
+>
+> File "src/sema.ml", line 137, characters 20-159:
+> 137 |                     (match sym.ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e)))))
+>                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Option _|Result (_, _)|List _|Map (_, _)|Fixed (_, _)|Slice _)
+>
+> File "src/sema.ml", line 222, characters 24-157:
+> 222 |                         (match sig_info.return_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s)
+>                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Enum _|Option _|Result (_, _)|List _|Map (_, _)|Fixed (_, _)|
+>     Slice _)
+>
+> File "src/sema.ml", line 223, characters 24-150:
+> 223 |                         (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s)))))
+>                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Enum _|Option _|Result (_, _)|List _|Map (_, _)|Fixed (_, _)|
+>     Slice _)
+>
+> File "src/sema.ml", line 252, characters 9-153:
+> 252 |          (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e))))
+>                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Option _|Result (_, _)|List _|Map (_, _)|Fixed (_, _)|Slice _)
+>
+> File "src/sema.ml", line 283, characters 9-153:
+> 283 |          (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e))))
+>                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (Void|Nil|Option _|Result (_, _)|List _|Map (_, _)|Fixed (_, _)|Slice _)
+>
+> File "src/sema.ml", lines 102-283, characters 2-156:
+> 102 | ..match expr with
+> 103 |   | Ast.IntLit (_, span) ->
+> 104 |       (match expected_ty with
+> 105 |        | Ast.I32 | Ast.I64 -> Ok ()
+> 106 |        | _ -> Error (Error.fromSpan span (Printf.sprintf "Expected %s but got integer literal" 
+> ...
+> 280 |                   Error (Error.fromSpan span (Printf.sprintf "Enum %s has no variant %s" enum_name variant_name)))
+> 281 |        | Ast.Enum e -> Error (Error.fromSpan span (Printf.sprintf "Expected enum %s but got enum %s" e enum_name))
+> 282 |        | _ -> Error (Error.fromSpan span (Printf.sprintf "Expected enum but got %s" 
+> 283 |          (match expected_ty with Ast.I32 -> "i32" | Ast.I64 -> "i64" | Ast.String -> "string" | Ast.Bool -> "bool" | Ast.Struct s -> s | Ast.Enum e -> e))))
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (NilLit _|SomeLit _|NoneLit _|OkLit _|ErrLit _|ListLit _|IndexAccess _)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Lexer.cmo -c -impl src/lexer.ml)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Parser.cmo -c -impl src/parser.ml)
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Ir.cmo -c -impl src/ir.ml)
+> File "src/ir.ml", lines 62-158, characters 2-47:
+>  62 | ..match expr with
+>  63 |   | Ast.IntLit (_, _) | Ast.BoolLit (_, _) | Ast.StringLit (_, _) ->
+>  64 |       ([], exprToValue expr, temp_counter)
+>  65 |   | Ast.Ident (name, _) ->
+>  66 |       (* M8: Check if this is an enum variant *)
+> ...
+> 155 |            (* For complex expressions, evaluate first *)
+> 156 |            let (obj_instrs, obj_val, tc') = generateExprInstructions object_ var_types temp_counter enums in
+> 157 |            temp_counter := !tc';
+> 158 |            (obj_instrs, obj_val, temp_counter)).......................................
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (NilLit _|SomeLit _|NoneLit _|OkLit _|ErrLit _|ListLit _|IndexAccess _)
+>
+> File "src/ir.ml", lines 513-577, characters 8-67:
+> 513 | ........match stmt with
+> 514 |         | Ast.Print { value; _ } ->
+> 515 |             let needs_temp = match value with
+> 516 |                | Ast.BinOp _ | Ast.UnOp _ | Ast.Call _ -> true
+> 517 |                | _ -> false
+> ...
+> 574 |                    body_instrs := !body_instrs @ exprs_instrs @ [Return (Some ret_val)]
+> 575 |                  else
+> 576 |                    let v = exprToValue expr in
+> 577 |                    body_instrs := !body_instrs @ [Return (Some v)])
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched: (If _|For _|Test _)
+>
+> File "src/ir.ml", line 150, characters 15-24:
+> 150 |            let temp_name = Printf.sprintf "__temp_%d" !temp_counter in
+>                      ^^^^^^^^^
+> Warning 26 [unused-var]: unused variable temp_name.
+$ (cd _build/default && C:\Users\jrepa\AppData\Local\opam\default\bin\ocamlc.opt.exe -w -40 -g -bin-annot -bin-annot-occurrences -I src/.driver.eobjs/byte -no-alias-deps -open Dune__exe -o src/.driver.eobjs/byte/dune__exe__Codegen_c.cmo -c -impl src/codegen_c.ml)
+> File "src/codegen_c.ml", lines 171-177, characters 15-121:
+> 171 | ...............(match Hashtbl.find_opt func.var_types name with
+> 172 |                 | Some Ast.I32 -> Buffer.add_string buf (Printf.sprintf "    print_i32(%s);\n" name)
+> 173 |                 | Some Ast.I64 -> Buffer.add_string buf (Printf.sprintf "    print_i64(%s);\n" name)
+> 174 |                 | Some Ast.String -> Buffer.add_string buf (Printf.sprintf "    print_string(%s);\n" name)
+> 175 |                 | Some Ast.Bool -> Buffer.add_string buf (Printf.sprintf "    print_bool(%s);\n" name)
+> 176 |                 | Some (Ast.Enum _) -> Buffer.add_string buf (Printf.sprintf "    print_i64((int64_t)%s); /* enum value */\n" name)
+> 177 |                 | None -> Buffer.add_string buf (Printf.sprintf "    print_i64((int64_t)%s); /* unknown type */\n" name)).
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     Some
+>       (Void|Nil|Struct _|Option _|Result (_, _)|List _|Map (_, _)|
+>       Fixed (_, _)|Slice _)
+>
+> File "src/codegen_c.ml", lines 162-177, characters 10-122:
+> 162 | ..........(match v with
+> 163 |            | Ir.StringVal s ->
+> 164 |                Buffer.add_string buf (Printf.sprintf "    print_string(\"%s\");\n" (escapeString s))
+> 165 |            | Ir.IntVal n ->
+> 166 |                Buffer.add_string buf (Printf.sprintf "    print_i64(%LdLL);\n" n)
+> ...
+> 174 |                 | Some Ast.String -> Buffer.add_string buf (Printf.sprintf "    print_string(%s);\n" name)
+> 175 |                 | Some Ast.Bool -> Buffer.add_string buf (Printf.sprintf "    print_bool(%s);\n" name)
+> 176 |                 | Some (Ast.Enum _) -> Buffer.add_string buf (Printf.sprintf "    print_i64((int64_t)%s); /* enum value */\n" name)
+> 177 |                 | None -> Buffer.add_string buf (Printf.sprintf "    print_i64((int64_t)%s); /* unknown type */\n" name)))
+> Warning 8 [partial-match]: this pattern-matching is not exhaustive.
+>   Here is an example of a case that is not matched:
+>     (StructVal (_, _)|EnumVal (_, _))

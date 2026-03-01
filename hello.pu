@@ -1,0 +1,5 @@
+actor Main {
+    handler receive(request: mailbox<String>) {
+        print_string("hello world")
+    }
+}

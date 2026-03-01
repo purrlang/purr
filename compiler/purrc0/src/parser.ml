@@ -642,6 +642,10 @@ let rec parse_handler st =
                      (match parseStmtList st [] with
                       | Error e -> Error e
                       | Ok body ->
+                          (* Skip newlines before checking for closing brace *)
+                          while current st |> fun t -> t.Token.kind = Token.Newline do
+                            ignore (advance st)
+                          done;
                           let tok5 = current st in
                           (match tok5.Token.kind with
                            | Token.RBrace ->
@@ -688,22 +692,26 @@ let parse_actor st =
       (match expectIdent st with
        | Error e -> Error e
        | Ok (name, _) ->
-           let tok2 = current st in
-           (match tok2.Token.kind with
-            | Token.LBrace ->
-                let _ = advance st in
-                (match parse_actor_body st [] [] with
-                 | Error e -> Error e
-                 | Ok (functions, handlers) ->
-                     let tok3 = current st in
-                     (match tok3.Token.kind with
-                      | Token.RBrace ->
-                          let _ = advance st in
-                          Ok ({ name; functions; handlers; span = tok.span } : Ast.actor_def)
-                      | _ ->
-                          Error (Error.fromSpan tok3.span "Expected }")))
-            | _ ->
-                Error (Error.fromSpan tok2.span "Expected '{'")))
+            let tok2 = current st in
+            (match tok2.Token.kind with
+             | Token.LBrace ->
+                 let _ = advance st in
+                 (match parse_actor_body st [] [] with
+                  | Error e -> Error e
+                  | Ok (functions, handlers) ->
+                      (* Skip newlines before checking for closing brace *)
+                      while current st |> fun t -> t.Token.kind = Token.Newline do
+                        ignore (advance st)
+                      done;
+                      let tok3 = current st in
+                      (match tok3.Token.kind with
+                       | Token.RBrace ->
+                           let _ = advance st in
+                           Ok ({ name; functions; handlers; span = tok.span } : Ast.actor_def)
+                       | _ ->
+                           Error (Error.fromSpan tok3.span "Expected }")))
+             | _ ->
+                 Error (Error.fromSpan tok2.span "Expected '{'")))
   | _ ->
       Error (Error.fromSpan tok.span "Expected 'actor'")
 

@@ -25,6 +25,17 @@ Thumbs.db
 *.a
 *.lib
 
+# OCaml/Dune
+_build/
+.dune/
+.merlin
+*.cmi
+*.cmo
+*.cmx
+*.cmxa
+*.byte
+dune-workspace.lock
+
 # Project-specific generated files
 program
 program.o
