@@ -1,0 +1,38 @@
+// M11 FFI Example: Calling C standard library functions
+
+// Declare C standard library functions
+extern fn printf(format: string) i32
+extern fn strlen(s: string) i64
+extern fn abs(n: i32) i32
+
+actor Main {
+    on start() {
+        // Call extern functions
+        var len: i64 = strlen("hello")
+        var absval: i32 = abs(-42)
+
+        print_string("strlen(hello) =")
+        print_i64(len)
+
+        print_string("abs(-42) =")
+        print_i32(absval)
+
+        print_string("FFI test complete")
+    }
+}
+
+test "extern functions work" {
+    var len: i64 = strlen("test string")
+    if (len == 11) {
+        print_string("PASS: strlen works")
+    } else {
+        print_string("FAIL: strlen")
+    }
+
+    var n: i32 = abs(-100)
+    if (n == 100) {
+        print_string("PASS: abs works")
+    } else {
+        print_string("FAIL: abs")
+    }
+}

@@ -1,0 +1,106 @@
+// GATE 1B ADT-5: Lease Manager
+// Struct-based lease table using map<string, i64> (expiry timestamp).
+// check_lease returns LeaseStatus enum, checked with switch.
+
+enum LeaseStatus {
+    Valid | Expired | Unknown
+}
+
+fn lease_store_new() map<string, i64> {
+    return mapNew()
+}
+
+fn lease_grant(store: map<string, i64>, tenant: string, expires_at: i64) i64 {
+    mapSet(store, tenant, expires_at)
+    return expires_at
+}
+
+fn lease_check(store: map<string, i64>, tenant: string, now: i64) LeaseStatus {
+    if (mapHas(store, tenant)) {
+        var expiry: i64 = mapGet(store, tenant)
+        if (expiry >= now) {
+            return Valid
+        } else {
+            return Expired
+        }
+    } else {
+        return Unknown
+    }
+}
+
+fn status_code(s: LeaseStatus) i32 {
+    switch s {
+        | Valid   { return 1 }
+        | Expired { return 2 }
+        | Unknown { return 3 }
+        else      { return 0 }
+    }
+}
+
+actor Main {
+    on start() {
+        print_string("GATE 1B ADT-5: Lease Manager")
+    }
+}
+
+test "valid_lease" {
+    var store: map<string, i64> = lease_store_new()
+    lease_grant(store, "alice", 1000)
+    var s: LeaseStatus = lease_check(store, "alice", 500)
+    var code: i32 = status_code(s)
+    if (code == 1) {
+        print_string("PASS: valid_lease")
+    } else {
+        print_string("FAIL: valid_lease")
+    }
+}
+
+test "expired_lease" {
+    var store: map<string, i64> = lease_store_new()
+    lease_grant(store, "bob", 100)
+    var s: LeaseStatus = lease_check(store, "bob", 500)
+    var code: i32 = status_code(s)
+    if (code == 2) {
+        print_string("PASS: expired_lease")
+    } else {
+        print_string("FAIL: expired_lease")
+    }
+}
+
+test "unknown_tenant" {
+    var store: map<string, i64> = lease_store_new()
+    var s: LeaseStatus = lease_check(store, "unknown", 100)
+    var code: i32 = status_code(s)
+    if (code == 3) {
+        print_string("PASS: unknown_tenant")
+    } else {
+        print_string("FAIL: unknown_tenant")
+    }
+}
+
+test "boundary_exact_expiry_is_valid" {
+    var store: map<string, i64> = lease_store_new()
+    lease_grant(store, "carol", 200)
+    var s: LeaseStatus = lease_check(store, "carol", 200)
+    var code: i32 = status_code(s)
+    if (code == 1) {
+        print_string("PASS: boundary_exact_expiry_is_valid")
+    } else {
+        print_string("FAIL: boundary_exact_expiry_is_valid")
+    }
+}
+
+test "multiple_tenants_independent" {
+    var store: map<string, i64> = lease_store_new()
+    lease_grant(store, "dave", 300)
+    lease_grant(store, "eve", 50)
+    var s1: LeaseStatus = lease_check(store, "dave", 100)
+    var s2: LeaseStatus = lease_check(store, "eve", 100)
+    var c1: i32 = status_code(s1)
+    var c2: i32 = status_code(s2)
+    if ((c1 == 1) && (c2 == 2)) {
+        print_string("PASS: multiple_tenants_independent")
+    } else {
+        print_string("FAIL: multiple_tenants_independent")
+    }
+}

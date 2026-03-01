@@ -1,0 +1,5 @@
+actor Main {
+  on start() {
+    print_string("Hello");
+  }
+}

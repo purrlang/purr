@@ -1,0 +1,40 @@
+// M1-M5 Validation: FizzBuzz
+// Tests: variables, functions, if/else, for loops, function calls
+
+actor Main {
+  fn fizzbuzz_classify(n: i32) -> i32 {
+    var fizz_check: i32 = (n % 3);
+    var buzz_check: i32 = (n % 5);
+    if (fizz_check == 0) {
+      if (buzz_check == 0) {
+        return 3;
+      } else {
+        return 1;
+      }
+    } else {
+      if (buzz_check == 0) {
+        return 2;
+      } else {
+        return 0;
+      }
+    }
+  }
+
+  fn test_fizzbuzz() -> i32 {
+    var fizzbuzz_count: i32 = 0;
+    var count: i32 = 1;
+    for count in 1, 16 {
+      var classification: i32 = self.fizzbuzz_classify(count);
+      if (classification == 3) {
+        fizzbuzz_count = (fizzbuzz_count + 1);
+      }
+    }
+    return fizzbuzz_count;
+  }
+
+  on start() {
+    print_string("FizzBuzz Validator");
+    var result: i32 = self.test_fizzbuzz();
+    print_i64(result);
+  }
+}

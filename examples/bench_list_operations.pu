@@ -1,0 +1,66 @@
+// M10.5 Benchmark Example: List Operations
+// Measures performance of list append and access operations
+
+fn measure_list_operations() {
+    var l: list<i64> = listNew()
+    var i: i64 = 0
+    var count: i64 = 0
+    for (i < 100) {
+        listAppend(l, i)
+        i = (i + 1)
+    }
+    for (count < 50) {
+        var val: i64 = listGet(l, count)
+        count = (count + 1)
+    }
+}
+
+actor Main {
+    on start() {
+        print_string("Benchmark suite loaded")
+    }
+}
+
+bench "list append 1000" iterations 1000 {
+    setup {
+        var l: list<i64> = listNew()
+    }
+    run {
+        listAppend(l, 42)
+    }
+}
+
+bench "list access 100" iterations 100 {
+    setup {
+        var l: list<i64> = listNew()
+        var i: i64 = 0
+        for (i < 50) {
+            listAppend(l, i)
+            i = (i + 1)
+        }
+    }
+    run {
+        var val: i64 = listGet(l, 10)
+    }
+}
+
+bench "map operations 500" iterations 500 {
+    setup {
+        var m: map<string, i64> = mapNew()
+    }
+    run {
+        mapSet(m, "key", 42)
+    }
+}
+
+test "list works" {
+    var l: list<i64> = listNew()
+    listAppend(l, 10)
+    listAppend(l, 20)
+    var len: i64 = listLength(l)
+    if (len == 2) {
+        print_string("PASS: list works")
+    } else {
+        print_string("FAIL: list works")
+    }
+}

@@ -1,0 +1,31 @@
+// M12 Namespace Example: Utility functions module
+namespace example.utils
+
+fn double(n: i64) i64 {
+    return n + n
+}
+
+fn triple(n: i64) i64 {
+    return n + n + n
+}
+
+fn square(n: i64) i64 {
+    return n * n
+}
+
+test "utility functions work" {
+    var d: i64 = double(5)
+    if (d == 10) {
+        print_string("PASS: double")
+    }
+
+    var t: i64 = triple(4)
+    if (t == 12) {
+        print_string("PASS: triple")
+    }
+
+    var s: i64 = square(6)
+    if (s == 36) {
+        print_string("PASS: square")
+    }
+}

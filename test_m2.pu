@@ -1,0 +1,7 @@
+actor Main {
+    on start() {
+        var x: i32 = 42
+        var name: string = "purr"
+        print(name)
+    }
+}
